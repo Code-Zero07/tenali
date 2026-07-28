@@ -13,6 +13,15 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 
+// ─── Import enhanced story helpers ──────────────────────────────────
+import {
+  ALL_DETECTIVE_STORIES,
+  getEnhancedStories,
+  isEnhancedCase,
+  getEliminationReasons,
+  validateEnhancedStory,
+} from './detective-stories';
+
 // ─── Helper: Simulate localStorage ─────────────────────────────────
 const localStorageMock = (() => {
   let store = {};
@@ -333,5 +342,249 @@ describe('Detective stories coverage', () => {
     // At least some topics should have multiple stories
     const topicsWithMultiple = Object.entries(topicCounts).filter(([, c]) => c >= 2);
     expect(topicsWithMultiple.length).toBeGreaterThan(0);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════
+// ENHANCED DETECTIVE STORIES — Schema Validation Tests
+// ════════════════════════════════════════════════════════════════════════
+
+describe('Enhanced story schema validation', () => {
+  const enhancedStories = getEnhancedStories();
+
+  test('isEnhancedCase returns true for stories with suspects', () => {
+    const storyWithSuspects = { suspects: [{ id: 's1' }] };
+    expect(isEnhancedCase(storyWithSuspects)).toBe(true);
+  });
+
+  test('isEnhancedCase returns false for classic stories', () => {
+    expect(isEnhancedCase({})).toBe(false);
+    expect(isEnhancedCase({ suspects: [] })).toBe(false);
+    expect(isEnhancedCase(null)).toBe(false);
+  });
+
+  test('getEnhancedStories returns exactly 15 stories', () => {
+    expect(enhancedStories).toHaveLength(15);
+  });
+
+  test('all enhanced stories have unique IDs', () => {
+    const ids = enhancedStories.map(s => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  test('all enhanced stories have valid suspects array', () => {
+    for (const story of enhancedStories) {
+      expect(Array.isArray(story.suspects)).toBe(true);
+      expect(story.suspects.length).toBeGreaterThanOrEqual(3);
+      expect(story.suspects.length).toBeLessThanOrEqual(4);
+      for (const suspect of story.suspects) {
+        expect(suspect.id).toBeTruthy();
+        expect(suspect.name).toBeTruthy();
+        expect(suspect.role).toBeTruthy();
+        expect(suspect.alibi).toBeTruthy();
+        expect(suspect.appearance).toBeTruthy();
+      }
+    }
+  });
+
+  test('all culprit IDs match a suspect ID', () => {
+    for (const story of enhancedStories) {
+      const suspectIds = story.suspects.map(s => s.id);
+      expect(suspectIds).toContain(story.culprit);
+    }
+  });
+
+  test('all stages have exactly 2 hints', () => {
+    for (const story of enhancedStories) {
+      for (const stage of story.stages) {
+        expect(stage.hints).toHaveLength(2);
+      }
+    }
+  });
+
+  test('all stages with evidence have valid eliminates array', () => {
+    for (const story of enhancedStories) {
+      const suspectIds = story.suspects.map(s => s.id);
+      for (const stage of story.stages) {
+        if (stage.evidence) {
+          expect(stage.evidence.id).toBeTruthy();
+          expect(stage.evidence.text).toBeTruthy();
+          expect(Array.isArray(stage.evidence.eliminates)).toBe(true);
+          for (const elimId of stage.evidence.eliminates) {
+            expect(suspectIds).toContain(elimId);
+          }
+        }
+      }
+    }
+  });
+
+  test('3-suspect stories have 2 clues (N-1 elimination)', () => {
+    const threeSuspectStories = enhancedStories.filter(s => s.suspects.length === 3);
+    for (const story of threeSuspectStories) {
+      expect(story.stages.length).toBe(2);
+    }
+  });
+
+  test('4-suspect stories have at least 2 clues', () => {
+    const fourSuspectStories = enhancedStories.filter(s => s.suspects.length === 4);
+    for (const story of fourSuspectStories) {
+      expect(story.stages.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  test('all enhanced stories have required fields', () => {
+    for (const story of enhancedStories) {
+      expect(story.id).toBeTruthy();
+      expect(story.title).toBeTruthy();
+      expect(story.description).toBeTruthy();
+      expect(typeof story.difficulty).toBe('number');
+      expect(typeof story.xpReward).toBe('number');
+      expect(story.topic).toBeTruthy();
+    }
+  });
+
+  test('enhanced stories have correct ID prefix', () => {
+    for (const story of enhancedStories) {
+      expect(story.id).toMatch(/^case-enhanced-\d+$/);
+    }
+  });
+
+  test('no enhanced story ID conflicts with classic story IDs', () => {
+    const classicIds = ALL_DETECTIVE_STORIES
+      .filter(s => !isEnhancedCase(s))
+      .map(s => s.id);
+    const enhancedIds = enhancedStories.map(s => s.id);
+    const conflicts = classicIds.filter(id => enhancedIds.includes(id));
+    expect(conflicts).toHaveLength(0);
+  });
+
+  test('all evidence items eliminate at least one suspect', () => {
+    for (const story of enhancedStories) {
+      for (const stage of story.stages) {
+        if (stage.evidence) {
+          expect(stage.evidence.eliminates.length).toBeGreaterThanOrEqual(1);
+        }
+      }
+    }
+  });
+
+  test('total eliminations narrow suspects down to exactly 1 (culprit)', () => {
+    for (const story of enhancedStories) {
+      const totalEliminated = new Set();
+      for (const stage of story.stages) {
+        if (stage.evidence?.eliminates) {
+          stage.evidence.eliminates.forEach(id => totalEliminated.add(id));
+        }
+      }
+      expect(totalEliminated.size).toBe(story.suspects.length - 1);
+      expect(totalEliminated.has(story.culprit)).toBe(false);
+    }
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════
+// getEliminationReasons — helper function tests
+// ════════════════════════════════════════════════════════════════════════
+
+describe('getEliminationReasons', () => {
+  const story = getEnhancedStories()[0]; // case-enhanced-1
+
+  test('returns exactly 3 reasons (1 correct + 2 wrong) for an eliminated suspect', () => {
+    const suspect = story.suspects.find(s => s.id === 'suspect-3');
+    const evidence = story.stages[0].evidence;
+    const reasons = getEliminationReasons(evidence, suspect, story.suspects);
+    expect(reasons).toHaveLength(3);
+    const correctCount = reasons.filter(r => r.correct).length;
+    expect(correctCount).toBe(1);
+    expect(reasons[0]).toHaveProperty('label');
+    expect(reasons[0]).toHaveProperty('detail');
+  });
+
+  test('returns empty array for a suspect NOT in the eliminates array', () => {
+    const suspect = story.suspects.find(s => s.id === story.culprit);
+    const evidence = story.stages[0].evidence;
+    const reasons = getEliminationReasons(evidence, suspect, story.suspects);
+    expect(reasons).toHaveLength(0);
+  });
+
+  test('all enhanced stories: every eliminated suspect gets exactly 3 reasons (1 correct + 2 wrong)', () => {
+    for (const s of getEnhancedStories()) {
+      for (const stage of s.stages) {
+        if (!stage.evidence) continue;
+        for (const elimId of stage.evidence.eliminates) {
+          const suspect = s.suspects.find(su => su.id === elimId);
+          const reasons = getEliminationReasons(stage.evidence, suspect, s.suspects);
+          expect(reasons.length).toBe(3);
+          expect(reasons.filter(r => r.correct).length).toBe(1);
+        }
+      }
+    }
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════
+// validateEnhancedStory — schema validation function tests
+// ════════════════════════════════════════════════════════════════════════
+
+describe('validateEnhancedStory', () => {
+  test('all 15 enhanced stories pass validation', () => {
+    for (const story of getEnhancedStories()) {
+      const result = validateEnhancedStory(story);
+      expect(result.valid).toBe(true);
+      if (!result.valid) {
+        console.error(`${story.id} errors:`, result.errors);
+      }
+    }
+  });
+
+  test('rejects story without suspects', () => {
+    const result = validateEnhancedStory({ id: 'test', stages: [{ answer: 5, evidence: { id: 'e1', text: 'test', eliminates: ['s1'] } }] });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes('suspects'))).toBe(true);
+  });
+
+  test('rejects story without culprit', () => {
+    const result = validateEnhancedStory({
+      id: 'test', suspects: [{ id: 's1', name: 'A', role: 'X', appearance: '🎭', characteristics: {} }],
+      stages: [{ answer: 5, evidence: { id: 'e1', text: 'test', eliminates: ['s1'] } }],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes('culprit'))).toBe(true);
+  });
+
+  test('rejects story with non-existent culprit ID', () => {
+    const result = validateEnhancedStory({
+      id: 'test', culprit: 's99',
+      suspects: [{ id: 's1', name: 'A', role: 'X', appearance: '🎭', characteristics: {} }],
+      stages: [{ answer: 5, evidence: { id: 'e1', text: 'test', eliminates: ['s1'] } }],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes('Culprit ID'))).toBe(true);
+  });
+
+  test('rejects evidence with empty eliminates array', () => {
+    const result = validateEnhancedStory({
+      id: 'test', culprit: 's1',
+      suspects: [
+        { id: 's1', name: 'A', role: 'X', appearance: '🎭', characteristics: {} },
+        { id: 's2', name: 'B', role: 'Y', appearance: '🎭', characteristics: {} },
+      ],
+      stages: [{ answer: 5, evidence: { id: 'e1', text: 'test', eliminates: [] } }],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes('eliminates'))).toBe(true);
+  });
+
+  test('rejects story with duplicate suspect IDs', () => {
+    const result = validateEnhancedStory({
+      id: 'test', culprit: 's1',
+      suspects: [
+        { id: 's1', name: 'A', role: 'X', appearance: '🎭', characteristics: {} },
+        { id: 's1', name: 'B', role: 'Y', appearance: '🎭', characteristics: {} },
+      ],
+      stages: [{ answer: 5, evidence: { id: 'e1', text: 'test', eliminates: ['s1'] } }],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes('Duplicate'))).toBe(true);
   });
 });
