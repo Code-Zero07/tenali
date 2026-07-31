@@ -11,7 +11,8 @@
  */
 
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { ALL_DETECTIVE_STORIES, isEnhancedCase, getEliminationReasons } from './detective-stories'
+import { ALL_DETECTIVE_STORIES, isEnhancedCase, getEliminationReasons, highlightEvidenceSentences, escapeRegex } from './detective-stories'
+import { CASE_GENERATORS } from './detective-generators'
 
 // ─── Sound Effects (Web Audio API) ──────────────────────────────────────
 let audioCtx = null;
@@ -201,6 +202,15 @@ function saveDetectiveProgress(data) {
   try { localStorage.setItem(DETECTIVE_STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
 
+function saveInProgressCase(caseId, snapshot) {
+  try {
+    const p = loadDetectiveProgress();
+    if (!p.cases) p.cases = {};
+    p.cases[caseId] = { ...snapshot, status: 'in_progress', updatedAt: Date.now() };
+    saveDetectiveProgress(p);
+  } catch {}
+}
+
 function getDetectiveRank(xp) {
   let rank = DETECTIVE_RANKS[0];
   for (const r of DETECTIVE_RANKS) {
@@ -365,6 +375,11 @@ function DetectiveCaseLibrary({ progress, cases, allComplete, onSelectCase, onBa
   const [topicFilter, setTopicFilter] = useState('all');
   const [modeFilter, setModeFilter] = useState('all'); // 'all' | 'classic' | 'enhanced'
   const searchInputRef = useRef(null);
+  const caseListRef = useRef(null);
+  const scrollTimerRef = useRef(null);
+  const [scrollActive, setScrollActive] = useState(false);
+  const [canScroll, setCanScroll] = useState(false);
+  const [thumbTop, setThumbTop] = useState(0);
 
   // Group cases by topic for filter dropdown
   const topicGroups = {};
@@ -402,6 +417,33 @@ function DetectiveCaseLibrary({ progress, cases, allComplete, onSelectCase, onBa
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  // Reset scroll position when filters change
+  useEffect(() => {
+    const el = caseListRef.current;
+    if (!el) return;
+    el.scrollTo(0, 0);
+    setThumbTop(0);
+    setCanScroll(el.scrollHeight - el.clientHeight > 0);
+  }, [searchTerm, topicFilter, modeFilter]);
+
+  // Show the scroll lens while scrolling; fade it out shortly after idle
+  const handleCaseListScroll = () => {
+    const el = caseListRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    const hasOverflow = maxScroll > 0;
+    setCanScroll(hasOverflow);
+    if (hasOverflow) {
+      const lensSize = 18; // matches .detective-scroll-pointer size in App.css
+      setThumbTop((el.scrollTop / maxScroll) * (el.clientHeight - lensSize));
+    }
+    setScrollActive(true);
+    clearTimeout(scrollTimerRef.current);
+    scrollTimerRef.current = setTimeout(() => setScrollActive(false), 1300);
+  };
+
+  useEffect(() => () => clearTimeout(scrollTimerRef.current), []);
 
   return (
     <div className="app-shell">
@@ -502,13 +544,14 @@ function DetectiveCaseLibrary({ progress, cases, allComplete, onSelectCase, onBa
         </div>
 
         {/* Case list */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          {filteredCases.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--clr-text-soft)', fontSize: '0.9rem' }}>
-              🔍 No cases match your search. Try different keywords.
-            </div>
-          )}
-          {filteredCases.map((caseItem, idx) => {
+        {filteredCases.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--clr-text-soft)', fontSize: '0.9rem' }}>
+            🔍 No cases match your search. Try different keywords.
+          </div>
+        ) : (
+          <div style={{ position: 'relative' }}>
+            <div ref={caseListRef} className="detective-case-scroll" onScroll={handleCaseListScroll} style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+              {filteredCases.map((caseItem, idx) => {
             const caseProgress = progress.cases[caseItem.id];
             const status = caseProgress ? caseProgress.status : 'not_started';
             const topicDisplay = caseItem.topic ? caseItem.topic.charAt(0).toUpperCase() + caseItem.topic.slice(1) : 'General';
@@ -555,7 +598,7 @@ function DetectiveCaseLibrary({ progress, cases, allComplete, onSelectCase, onBa
                     {caseItem.description}
                   </div>
                   <div style={{ fontSize: '0.65rem', color: 'var(--clr-text-soft)', marginTop: '0.2rem', fontWeight: 600 }}>
-                    📚 {topicDisplay} &middot; {caseItem.stages.length} stages
+                    📚 {topicDisplay} &middot; {isEnhancedCase(caseItem) ? 'Dynamic stages' : `${(caseItem.stages || []).length} stages`}
                     {isEnhancedCase(caseItem) && (
                       <span style={{ marginLeft: '0.4rem', padding: '1px 6px', borderRadius: 999, background: 'rgba(156, 39, 176, 0.12)', color: '#9c27b0', fontWeight: 700, fontSize: '0.6rem' }}>
                         🔎 Case Files
@@ -580,9 +623,12 @@ function DetectiveCaseLibrary({ progress, cases, allComplete, onSelectCase, onBa
                   )}
                 </div>
               </button>
-            );
-          })}
-        </div>
+              );
+            })}
+            </div>
+            <div className={`detective-scroll-pointer${scrollActive && canScroll ? ' is-visible' : ''}`} style={{ top: thumbTop }} aria-hidden="true" />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -600,6 +646,8 @@ function DetectiveCaseView({ caseData, initialStage, onComplete, onBack }) {
   const [hintUsed, setHintUsed] = useState(false);
   const [totalHintsUsed, setTotalHintsUsed] = useState(0);
   const [skipMessage, setSkipMessage] = useState(false);
+  const [motivationIdx, setMotivationIdx] = useState(0);
+  const wrongMotivations = ['Close, detective! Give it another go.', 'Not quite — recheck the numbers!', 'Almost there! Try once more.', "Keep at it, detective! You're getting warmer.", "Don't give up! Look at the clues again."];
   const inputRef = useRef(null);
   const celebrationRef = useRef(null);
 
@@ -616,6 +664,7 @@ function DetectiveCaseView({ caseData, initialStage, onComplete, onBack }) {
     const correct = checkDetectiveAnswer(stage.answer, answer);
     setRevealed(true);
     setFeedback({ correct, correctAnswer: stage.answer });
+    if (!correct) setMotivationIdx(i => (i + 1) % wrongMotivations.length);
   };
 
   const handleHint = () => {
@@ -783,7 +832,7 @@ function DetectiveCaseView({ caseData, initialStage, onComplete, onBack }) {
           <button onClick={onBack} className="mda-popIn mda-delay-4"
             style={{
               padding: '0.8rem 2rem', borderRadius: 12, border: 'none',
-              background: 'linear-gradient(135deg, #1a237e, #283593)',
+              background: 'linear-gradient(135deg, var(--clr-accent), #d4733e)',
               color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
               boxShadow: '0 4px 16px rgba(232,134,74,0.3)',
               transition: 'transform 0.15s, box-shadow 0.15s',
@@ -805,7 +854,16 @@ function DetectiveCaseView({ caseData, initialStage, onComplete, onBack }) {
   return (
     <div className="app-shell">
       <div className="card" style={{ maxWidth: 'min(600px, 95vw)', margin: '0 auto' }}>
-        <button className="back-button" onClick={onBack} style={{ marginBottom: '0.8rem' }}>← Cases</button>
+        <button className="back-button" onClick={() => {
+          if (!completed && stageIndex > 0) {
+            saveInProgressCase(caseData.id, {
+              currentStage: stageIndex,
+              totalStages: caseData.stages.length,
+              topic: caseData.topic,
+            });
+          }
+          onBack();
+        }} style={{ marginBottom: '0.8rem' }}>← Cases</button>
 
         {/* Progress indicator */}
         <div style={{ display: 'flex', gap: 6, marginBottom: '0.5rem', justifyContent: 'center' }}>
@@ -936,7 +994,7 @@ function DetectiveCaseView({ caseData, initialStage, onComplete, onBack }) {
               <button onClick={() => setSkipMessage(false)}
                 style={{
                   padding: '0.5rem 1.2rem', borderRadius: 8, border: 'none',
-                  background: 'linear-gradient(135deg, #1a237e, #283593)',
+                  background: 'linear-gradient(135deg, var(--clr-accent), #d4733e)',
                   color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
                 }}
               >
@@ -976,7 +1034,7 @@ function DetectiveCaseView({ caseData, initialStage, onComplete, onBack }) {
                 className="mda-btn-press"
                 style={{
                   padding: '0.7rem 1.5rem', borderRadius: 10, border: 'none',
-                  background: 'linear-gradient(135deg, #1a237e, #283593)',
+                  background: 'linear-gradient(135deg, var(--clr-accent), #d4733e)',
                   color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: answer.trim() ? 'pointer' : 'not-allowed',
                   opacity: answer.trim() ? 1 : 0.5,
                 }}
@@ -1003,7 +1061,7 @@ function DetectiveCaseView({ caseData, initialStage, onComplete, onBack }) {
           }}>
             <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.3rem',
               color: feedback && feedback.correct ? 'var(--clr-correct, #4caf50)' : 'var(--clr-wrong, #e05a4a)' }}>
-              {feedback && feedback.correct ? '✓ Correct!' : '✗ Not quite'}
+              {feedback && feedback.correct ? '✓ Correct!' : '🔍 ' + wrongMotivations[motivationIdx]}
             </div>
             {!feedback.correct && (
               <div style={{ fontSize: '0.85rem', color: 'var(--clr-text-soft)', marginBottom: '0.5rem' }}>
@@ -1177,7 +1235,7 @@ function AchievementNotification({ achievements, onDismiss }) {
       {achievements.map((a, i) => (
         <div key={a.id} style={{
           padding: '0.8rem 1.2rem', borderRadius: 12,
-          background: 'linear-gradient(135deg, #1a237e, #283593)', color: '#fff',
+          background: 'linear-gradient(135deg, var(--clr-accent), #d4733e)', color: '#fff',
           boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
           display: 'flex', alignItems: 'center', gap: '0.8rem',
           marginBottom: i < achievements.length - 1 ? '0.5rem' : 0,
@@ -1495,7 +1553,7 @@ function SuspectLineup({ suspects, onContinue }) {
             className="mda-btn-press"
             style={{
               padding: '0.8rem 2rem', borderRadius: 12, border: 'none',
-              background: 'linear-gradient(135deg, #1a237e, #283593)',
+              background: 'linear-gradient(135deg, var(--clr-accent), #d4733e)',
               color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
               boxShadow: '0 4px 16px rgba(232,134,74,0.3)',
               transition: 'transform 0.15s, box-shadow 0.15s',
@@ -1605,17 +1663,40 @@ function EvidencePanel({ evidenceItems, suspects, eliminatedIds }) {
   );
 }
 
+// ─── Evidence highlight helpers ───────────────────────────────────────────
+
+function HighlightedEvidenceText({ text, suspects, eliminatedIds }) {
+  const segments = highlightEvidenceSentences(text, suspects, eliminatedIds);
+  const out = [];
+  segments.forEach((seg, i) => {
+    if (i > 0) out.push(' ');
+    if (!seg.highlight) { out.push(<span key={i}>{seg.text}</span>); return; }
+    if (!seg.token) { out.push(<mark key={i} className="detective-evidence-mark">{seg.text}</mark>); return; }
+    const parts = seg.text.split(new RegExp(`(\\b${escapeRegex(seg.token)}\\b)`, 'i'));
+    out.push(
+      <mark key={i} className="detective-evidence-mark">
+        {parts.map((part, j) =>
+          part.toLowerCase() === seg.token.toLowerCase()
+            ? <strong key={j} className="detective-evidence-token">{part}</strong>
+            : part
+        )}
+      </mark>
+    );
+  });
+  return out;
+}
+
 // ─── EnhancedCasePlay — non-linear clue solving with elimination ─────────
 
-function EnhancedCasePlay({ story, onComplete, onBack }) {
-  const [phase, setPhase] = useState('clue-grid'); // 'clue-grid' | 'solving' | 'elimination' | 'accusation' | 'done'
-  const [solvedClues, setSolvedClues] = useState(new Set());
-  const [eliminatedIds, setEliminatedIds] = useState(new Set());
-  const [evidenceItems, setEvidenceItems] = useState([]);
-  const [currentClueIdx, setCurrentClueIdx] = useState(null);
-  const [totalHintsUsed, setTotalHintsUsed] = useState(0);
+function EnhancedCasePlay({ story, onComplete, onBack, initialState }) {
+  const [phase, setPhase] = useState(initialState?.phase || 'clue-grid'); // 'clue-grid' | 'solving' | 'elimination' | 'accusation' | 'done'
+  const [solvedClues, setSolvedClues] = useState(new Set(initialState?.solvedClues || []));
+  const [eliminatedIds, setEliminatedIds] = useState(new Set(initialState?.eliminatedIds || []));
+  const [evidenceItems, setEvidenceItems] = useState(initialState?.evidenceItems || []);
+  const [currentClueIdx, setCurrentClueIdx] = useState(initialState?.currentClueIdx ?? null);
+  const [totalHintsUsed, setTotalHintsUsed] = useState(initialState?.totalHintsUsed || 0);
   const [eliminationMsg, setEliminationMsg] = useState(null); // { type: 'correct'|'wrong'|'skip', text: '' }
-  const [pendingEvidence, setPendingEvidence] = useState(null);
+  const [pendingEvidence, setPendingEvidence] = useState(initialState?.pendingEvidence ?? null);
   const [selectedElimSuspect, setSelectedElimSuspect] = useState(null);
   const [reasonPhase, setReasonPhase] = useState(false);
   const [accusedId, setAccusedId] = useState(null);
@@ -1771,6 +1852,25 @@ function EnhancedCasePlay({ story, onComplete, onBack }) {
     return () => { if (frame) cancelAnimationFrame(frame); };
   }, [completed]);
 
+  // Persist mid-case progress so it survives leaving the case or refreshing
+  useEffect(() => {
+    if (completed) return;
+    if (solvedClues.size === 0 && eliminatedIds.size === 0 && evidenceItems.length === 0) return;
+    saveInProgressCase(story.id, {
+      currentStage: stages.length,
+      totalStages: stages.length,
+      topic: story.topic,
+      phase,
+      solvedClues: [...solvedClues],
+      eliminatedIds: [...eliminatedIds],
+      evidenceItems,
+      currentClueIdx,
+      pendingEvidence,
+      totalHintsUsed,
+      savedCase: story,
+    });
+  }, [phase, solvedClues, eliminatedIds, evidenceItems, currentClueIdx, pendingEvidence, totalHintsUsed, completed, story, stages.length]);
+
   // ── Render: Completion screen ──────────────────────────────────────────
   if (completed) {
     const starCount = totalHintsUsed === 0 ? 3 : totalHintsUsed <= 2 ? 2 : 1;
@@ -1813,7 +1913,7 @@ function EnhancedCasePlay({ story, onComplete, onBack }) {
           <button onClick={onBack} className="mda-popIn mda-delay-4"
             style={{
               padding: '0.8rem 2rem', borderRadius: 12, border: 'none',
-              background: 'linear-gradient(135deg, #1a237e, #283593)',
+              background: 'linear-gradient(135deg, var(--clr-accent), #d4733e)',
               color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
               boxShadow: '0 4px 16px rgba(232,134,74,0.3)',
             }}
@@ -1842,7 +1942,9 @@ function EnhancedCasePlay({ story, onComplete, onBack }) {
             <div style={{ fontWeight: 700, color: '#ff9800', fontSize: '0.72rem', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
               📓 Evidence Collected
             </div>
-            {pendingEvidence.text}
+            <div style={{ marginTop: '0.3rem' }}>
+              <HighlightedEvidenceText text={pendingEvidence.text} suspects={suspects} eliminatedIds={pendingEvidence.eliminates} />
+            </div>
           </div>
 
           {!eliminationMsg && !reasonPhase ? (
@@ -1958,7 +2060,7 @@ function EnhancedCasePlay({ story, onComplete, onBack }) {
               <button onClick={handleEliminationDone}
                 style={{
                   padding: '0.6rem 1.5rem', borderRadius: 10, border: 'none',
-                  background: 'linear-gradient(135deg, #1a237e, #283593)',
+                  background: 'linear-gradient(135deg, var(--clr-accent), #d4733e)',
                   color: '#fff', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
                 }}
               >
@@ -2044,7 +2146,7 @@ function EnhancedCasePlay({ story, onComplete, onBack }) {
               style={{
                 padding: '0.7rem 2rem', borderRadius: 12, border: 'none',
                 background: selectedProofs.size >= 2
-                  ? 'linear-gradient(135deg, #1a237e, #283593)'
+                  ? 'linear-gradient(135deg, var(--clr-accent), #d4733e)'
                   : 'var(--clr-border)',
                 color: selectedProofs.size >= 2 ? '#fff' : 'var(--clr-text-soft)',
                 fontWeight: 700, fontSize: '0.95rem', cursor: selectedProofs.size >= 2 ? 'pointer' : 'not-allowed',
@@ -2143,7 +2245,24 @@ function EnhancedCasePlay({ story, onComplete, onBack }) {
   return (
     <div className="app-shell">
       <div className="card" style={{ maxWidth: 'min(650px, 95vw)', margin: '0 auto' }}>
-        <button className="back-button" onClick={onBack} style={{ marginBottom: '0.8rem' }}>← Cases</button>
+        <button className="back-button" onClick={() => {
+          if (!completed && (solvedClues.size > 0 || eliminatedIds.size > 0 || evidenceItems.length > 0)) {
+            saveInProgressCase(story.id, {
+              currentStage: stages.length,
+              totalStages: stages.length,
+              topic: story.topic,
+              phase,
+              solvedClues: [...solvedClues],
+              eliminatedIds: [...eliminatedIds],
+              evidenceItems,
+              currentClueIdx,
+              pendingEvidence,
+              totalHintsUsed,
+              savedCase: story,
+            });
+          }
+          onBack();
+        }} style={{ marginBottom: '0.8rem' }}>← Cases</button>
 
         <DetectiveMascot mood={allSolved ? 'solved' : 'neutral'}
           label={allSolved ? 'All clues solved!' : `${solvedClues.size}/${stages.length} clues solved`} />
@@ -2214,7 +2333,7 @@ function EnhancedCasePlay({ story, onComplete, onBack }) {
               className="mda-btn-press"
               style={{
                 padding: '0.8rem 2rem', borderRadius: 12, border: 'none',
-                background: 'linear-gradient(135deg, #1a237e, #283593)',
+                background: 'linear-gradient(135deg, var(--clr-accent), #d4733e)',
                 color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
                 boxShadow: '0 4px 16px rgba(232,134,74,0.3)',
               }}
@@ -2237,6 +2356,8 @@ function EnhancedClueSolve({ story, clueIdx, onSolved, onBack }) {
   const [hintLevel, setHintLevel] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [skipMessage, setSkipMessage] = useState(null);
+  const [motivationIdx, setMotivationIdx] = useState(0);
+  const wrongMotivations = ['Close, detective! Give it another go.', 'Not quite — recheck the numbers!', 'Almost there! Try once more.', "Keep at it, detective! You're getting warmer.", "Don't give up! Look at the clues again."];
   const inputRef = useRef(null);
 
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 100); }, []);
@@ -2251,7 +2372,8 @@ function EnhancedClueSolve({ story, clueIdx, onSolved, onBack }) {
     if (revealed || !answer.trim()) return;
     const correct = checkDetectiveAnswer(stage.answer, answer);
     setRevealed(true);
-    setFeedback({ correct, correctAnswer: stage.answer });
+    setFeedback({ correct });
+    if (!correct) setMotivationIdx(i => (i + 1) % wrongMotivations.length);
   };
 
   const handleHint = () => {
@@ -2369,7 +2491,7 @@ function EnhancedClueSolve({ story, clueIdx, onSolved, onBack }) {
               <button onClick={() => setSkipMessage(false)}
                 style={{
                   padding: '0.5rem 1.2rem', borderRadius: 8, border: 'none',
-                  background: 'linear-gradient(135deg, #1a237e, #283593)',
+                  background: 'linear-gradient(135deg, var(--clr-accent), #d4733e)',
                   color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
                 }}
               >
@@ -2400,7 +2522,7 @@ function EnhancedClueSolve({ story, clueIdx, onSolved, onBack }) {
               <button type="submit" disabled={!answer.trim()}
                 style={{
                   padding: '0.7rem 1.5rem', borderRadius: 10, border: 'none',
-                  background: 'linear-gradient(135deg, #1a237e, #283593)',
+                  background: 'linear-gradient(135deg, var(--clr-accent), #d4733e)',
                   color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: answer.trim() ? 'pointer' : 'not-allowed',
                   opacity: answer.trim() ? 1 : 0.5,
                 }}
@@ -2424,13 +2546,8 @@ function EnhancedClueSolve({ story, clueIdx, onSolved, onBack }) {
           }}>
             <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.3rem',
               color: feedback?.correct ? 'var(--clr-correct, #4caf50)' : 'var(--clr-wrong, #e05a4a)' }}>
-              {feedback?.correct ? '✓ Correct!' : '✗ Not quite'}
+              {feedback?.correct ? '✓ Correct!' : '🔍 ' + wrongMotivations[motivationIdx]}
             </div>
-            {!feedback?.correct && (
-              <div style={{ fontSize: '0.85rem', color: 'var(--clr-text-soft)', marginBottom: '0.5rem' }}>
-                The correct answer was: <strong>{feedback?.correctAnswer}</strong>
-              </div>
-            )}
             <button onClick={handleNext}
               style={{
                 marginTop: '0.5rem', padding: '0.5rem 1.5rem', borderRadius: 8,
@@ -2456,6 +2573,7 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
   const [newAchievements, setNewAchievements] = useState([]);
   const [userAge, setUserAge] = useState(progress.age || 8);
   const [enhancedPhase, setEnhancedPhase] = useState(null); // null | 'lineup' | 'playing'
+  const [generatedCase, setGeneratedCase] = useState(null); // holds dynamically generated cases (e.g. Profit & Loss)
 
   // Persist age whenever it changes
   useEffect(() => {
@@ -2485,6 +2603,17 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
     if (unfinishedCase) {
       setActiveCaseId(unfinishedCase[0]);
       setScreen('case');
+      const saved = unfinishedCase[1];
+      // Resume from saved snapshot if present; otherwise generate dynamic content
+      if (saved && saved.savedCase) {
+        setGeneratedCase(saved.savedCase);
+        setEnhancedPhase('playing');
+      } else if (CASE_GENERATORS[unfinishedCase[0]]) {
+        setGeneratedCase(CASE_GENERATORS[unfinishedCase[0]]());
+        setEnhancedPhase('lineup');
+      } else {
+        setEnhancedPhase(null);
+      }
     } else if (allComplete || !hasAnyCaseStarted) {
       setScreen('dashboard');
     } else {
@@ -2495,9 +2624,21 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
   // Case deduplication: pick a case that hasn't been used for the same topic
   const handleSelectCase = (caseId) => {
     setActiveCaseId(caseId);
-    const caseData = ALL_CASES.find(c => c.id === caseId);
+    // Resume an in-progress case from its saved snapshot; otherwise generate fresh
+    const existing = (progress.cases || {})[caseId];
+    let caseData;
+    if (existing && existing.status === 'in_progress' && existing.savedCase) {
+      caseData = existing.savedCase;
+      setGeneratedCase(caseData);
+    } else if (CASE_GENERATORS[caseId]) {
+      caseData = CASE_GENERATORS[caseId]();
+      setGeneratedCase(caseData);
+    } else {
+      setGeneratedCase(null);
+      caseData = ALL_CASES.find(c => c.id === caseId);
+    }
     if (caseData && isEnhancedCase(caseData)) {
-      setEnhancedPhase('lineup');
+      setEnhancedPhase(existing && existing.status === 'in_progress' && existing.savedCase ? 'playing' : 'lineup');
     } else {
       setEnhancedPhase(null);
     }
@@ -2505,7 +2646,7 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
   };
 
   const handleCaseComplete = (caseId, solved, meta = {}) => {
-    const caseData = ALL_CASES.find(c => c.id === caseId);
+    const caseData = (generatedCase && generatedCase.id === caseId) ? generatedCase : ALL_CASES.find(c => c.id === caseId);
     if (!caseData) return;
 
     const updated = { ...progress };
@@ -2651,7 +2792,7 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
   // SCREEN: Detective Case View
   // ═══════════════════════════════════════
   if (screen === 'case' && activeCaseId) {
-    const caseData = ALL_CASES.find(c => c.id === activeCaseId);
+    const caseData = generatedCase || ALL_CASES.find(c => c.id === activeCaseId);
     if (!caseData) { setScreen('library'); return null; }
 
     // Enhanced case flow: SuspectLineup → EnhancedCasePlay
@@ -2677,6 +2818,18 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
       }
 
       if (enhancedPhase === 'playing') {
+        const caseProgress = (progress.cases || {})[activeCaseId];
+        const resumeState = (caseProgress && caseProgress.status === 'in_progress' && caseProgress.savedCase)
+          ? {
+              phase: caseProgress.phase,
+              solvedClues: caseProgress.solvedClues || [],
+              eliminatedIds: caseProgress.eliminatedIds || [],
+              evidenceItems: caseProgress.evidenceItems || [],
+              currentClueIdx: caseProgress.currentClueIdx ?? null,
+              pendingEvidence: caseProgress.pendingEvidence || null,
+              totalHintsUsed: caseProgress.totalHintsUsed || 0,
+            }
+          : null;
         return (
           <>
             <AchievementNotification achievements={newAchievements} onDismiss={dismissAchievementNotif} />
@@ -2684,6 +2837,7 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
               story={caseData}
               onComplete={handleEnhancedComplete}
               onBack={handleEnhancedBack}
+              initialState={resumeState}
             />
           </>
         );
@@ -2871,7 +3025,7 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
               padding: '0.9rem 2rem', borderRadius: 14, border: 'none',
-              background: 'linear-gradient(135deg, #1a237e, #283593)',
+              background: 'linear-gradient(135deg, var(--clr-accent), #d4733e)',
               color: '#fff', fontWeight: 700, fontSize: '1.05rem',
               cursor: 'pointer', boxShadow: '0 4px 16px rgba(232,134,74,0.3)',
               transition: 'transform 0.15s, box-shadow 0.15s',

@@ -21,6 +21,8 @@ import {
   getEliminationReasons,
   validateEnhancedStory,
 } from './detective-stories';
+import { CASE_GENERATORS } from './detective-generators';
+import { buildSuspectAliases, highlightEvidenceSentences } from './detective-stories';
 
 // ─── Helper: Simulate localStorage ─────────────────────────────────
 const localStorageMock = (() => {
@@ -350,30 +352,35 @@ describe('Detective stories coverage', () => {
 // ════════════════════════════════════════════════════════════════════════
 
 describe('Enhanced story schema validation', () => {
-  const enhancedStories = getEnhancedStories();
+  const enhancedStubs = getEnhancedStories();
+  const generatedStories = Object.values(CASE_GENERATORS).map(fn => fn());
 
-  test('isEnhancedCase returns true for stories with suspects', () => {
-    const storyWithSuspects = { suspects: [{ id: 's1' }] };
-    expect(isEnhancedCase(storyWithSuspects)).toBe(true);
+  test('isEnhancedCase returns true for stories with case-enhanced- prefix', () => {
+    expect(isEnhancedCase({ id: 'case-enhanced-1' })).toBe(true);
+    expect(isEnhancedCase({ id: 'case-enhanced-15' })).toBe(true);
   });
 
   test('isEnhancedCase returns false for classic stories', () => {
     expect(isEnhancedCase({})).toBe(false);
-    expect(isEnhancedCase({ suspects: [] })).toBe(false);
+    expect(isEnhancedCase({ id: 'counting-1' })).toBe(false);
     expect(isEnhancedCase(null)).toBe(false);
   });
 
-  test('getEnhancedStories returns exactly 15 stories', () => {
-    expect(enhancedStories).toHaveLength(15);
+  test('getEnhancedStories returns exactly 15 stubs', () => {
+    expect(enhancedStubs).toHaveLength(15);
   });
 
-  test('all enhanced stories have unique IDs', () => {
-    const ids = enhancedStories.map(s => s.id);
+  test('CASE_GENERATORS has exactly 15 generators', () => {
+    expect(Object.keys(CASE_GENERATORS)).toHaveLength(15);
+  });
+
+  test('all enhanced story stubs have unique IDs', () => {
+    const ids = enhancedStubs.map(s => s.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  test('all enhanced stories have valid suspects array', () => {
-    for (const story of enhancedStories) {
+  test('all generated stories have valid suspects array', () => {
+    for (const story of generatedStories) {
       expect(Array.isArray(story.suspects)).toBe(true);
       expect(story.suspects.length).toBeGreaterThanOrEqual(3);
       expect(story.suspects.length).toBeLessThanOrEqual(4);
@@ -387,23 +394,24 @@ describe('Enhanced story schema validation', () => {
     }
   });
 
-  test('all culprit IDs match a suspect ID', () => {
-    for (const story of enhancedStories) {
+  test('all generated culprit IDs match a suspect ID', () => {
+    for (const story of generatedStories) {
       const suspectIds = story.suspects.map(s => s.id);
       expect(suspectIds).toContain(story.culprit);
     }
   });
 
-  test('all stages have exactly 2 hints', () => {
-    for (const story of enhancedStories) {
+  test('all generated stages have hints array', () => {
+    for (const story of generatedStories) {
       for (const stage of story.stages) {
-        expect(stage.hints).toHaveLength(2);
+        expect(Array.isArray(stage.hints)).toBe(true);
+        expect(stage.hints.length).toBeGreaterThanOrEqual(1);
       }
     }
   });
 
-  test('all stages with evidence have valid eliminates array', () => {
-    for (const story of enhancedStories) {
+  test('all generated stages with evidence have valid eliminates array', () => {
+    for (const story of generatedStories) {
       const suspectIds = story.suspects.map(s => s.id);
       for (const stage of story.stages) {
         if (stage.evidence) {
@@ -418,22 +426,16 @@ describe('Enhanced story schema validation', () => {
     }
   });
 
-  test('3-suspect stories have 2 clues (N-1 elimination)', () => {
-    const threeSuspectStories = enhancedStories.filter(s => s.suspects.length === 3);
-    for (const story of threeSuspectStories) {
-      expect(story.stages.length).toBe(2);
-    }
-  });
-
-  test('4-suspect stories have at least 2 clues', () => {
-    const fourSuspectStories = enhancedStories.filter(s => s.suspects.length === 4);
-    for (const story of fourSuspectStories) {
+  test('all generated stories have 2-3 stages and 3 suspects', () => {
+    for (const story of generatedStories) {
+      expect(story.suspects.length).toBe(3);
       expect(story.stages.length).toBeGreaterThanOrEqual(2);
+      expect(story.stages.length).toBeLessThanOrEqual(3);
     }
   });
 
-  test('all enhanced stories have required fields', () => {
-    for (const story of enhancedStories) {
+  test('all generated stories have required fields', () => {
+    for (const story of generatedStories) {
       expect(story.id).toBeTruthy();
       expect(story.title).toBeTruthy();
       expect(story.description).toBeTruthy();
@@ -443,23 +445,23 @@ describe('Enhanced story schema validation', () => {
     }
   });
 
-  test('enhanced stories have correct ID prefix', () => {
-    for (const story of enhancedStories) {
+  test('generated stories have correct ID prefix', () => {
+    for (const story of generatedStories) {
       expect(story.id).toMatch(/^case-enhanced-\d+$/);
     }
   });
 
-  test('no enhanced story ID conflicts with classic story IDs', () => {
+  test('no enhanced story stub ID conflicts with classic story IDs', () => {
     const classicIds = ALL_DETECTIVE_STORIES
       .filter(s => !isEnhancedCase(s))
       .map(s => s.id);
-    const enhancedIds = enhancedStories.map(s => s.id);
+    const enhancedIds = enhancedStubs.map(s => s.id);
     const conflicts = classicIds.filter(id => enhancedIds.includes(id));
     expect(conflicts).toHaveLength(0);
   });
 
-  test('all evidence items eliminate at least one suspect', () => {
-    for (const story of enhancedStories) {
+  test('all generated evidence items eliminate at least one suspect', () => {
+    for (const story of generatedStories) {
       for (const stage of story.stages) {
         if (stage.evidence) {
           expect(stage.evidence.eliminates.length).toBeGreaterThanOrEqual(1);
@@ -469,7 +471,7 @@ describe('Enhanced story schema validation', () => {
   });
 
   test('total eliminations narrow suspects down to exactly 1 (culprit)', () => {
-    for (const story of enhancedStories) {
+    for (const story of generatedStories) {
       const totalEliminated = new Set();
       for (const stage of story.stages) {
         if (stage.evidence?.eliminates) {
@@ -487,7 +489,7 @@ describe('Enhanced story schema validation', () => {
 // ════════════════════════════════════════════════════════════════════════
 
 describe('getEliminationReasons', () => {
-  const story = getEnhancedStories()[0]; // case-enhanced-1
+  const story = CASE_GENERATORS['case-enhanced-1'](); // case-enhanced-1 generated
 
   test('returns exactly 3 reasons (1 correct + 2 wrong) for an eliminated suspect', () => {
     const suspect = story.suspects.find(s => s.id === 'suspect-3');
@@ -507,8 +509,9 @@ describe('getEliminationReasons', () => {
     expect(reasons).toHaveLength(0);
   });
 
-  test('all enhanced stories: every eliminated suspect gets exactly 3 reasons (1 correct + 2 wrong)', () => {
-    for (const s of getEnhancedStories()) {
+  test('all generated stories: every eliminated suspect gets exactly 3 reasons (1 correct + 2 wrong)', () => {
+    for (const gen of Object.values(CASE_GENERATORS)) {
+      const s = gen();
       for (const stage of s.stages) {
         if (!stage.evidence) continue;
         for (const elimId of stage.evidence.eliminates) {
@@ -523,12 +526,107 @@ describe('getEliminationReasons', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════
+// highlightEvidenceSentences — evidence highlight matcher tests
+// ════════════════════════════════════════════════════════════════════════
+
+describe('highlightEvidenceSentences', () => {
+  const suspects = (list) => list.map(([id, name, role]) => ({ id, name, role }));
+
+  test('highlights the sentence mentioning the eliminated suspect by name token', () => {
+    const text = 'The Corner Mart was closed. The shopkeeper was at the wholesale market that morning and never touched the computer. The delivery driver was on the road all day.';
+    const list = suspects([['s1', 'Ravi the Shopkeeper', 'Store Owner']]);
+    const segments = highlightEvidenceSentences(text, list, ['s1']);
+    expect(segments.map(s => s.highlight)).toEqual([false, true, false]);
+    expect(segments[1].token).toBe('shopkeeper');
+  });
+
+  test('highlights the sentence mentioning the eliminated suspect by role token', () => {
+    const text = 'The area 27 corresponds to the off-limits storage room. The head researcher was at a conference and couldn\'t have accessed the lab.';
+    const list = suspects([['s1', 'Dr. Bose', 'Head Researcher']]);
+    const segments = highlightEvidenceSentences(text, list, ['s1']);
+    expect(segments.map(s => s.highlight)).toEqual([false, true]);
+    expect(segments[1].token).toBe('researcher');
+  });
+
+  test('handles the TA abbreviation alias', () => {
+    const text = 'The TA was holding office hours and doesn\'t have keys to the exam storage.';
+    const list = suspects([['s3', 'TA Verma', 'Teaching Assistant']]);
+    const segments = highlightEvidenceSentences(text, list, ['s3']);
+    expect(segments[0].highlight).toBe(true);
+    expect(segments[0].token).toBe('ta');
+  });
+
+  test('handles the IT admin abbreviation alias', () => {
+    const text = 'The true mean is 200K but the report showed a higher number. The IT admin manages servers, not data content.';
+    const list = suspects([['s2', 'Raj the IT Admin', 'Database Administrator']]);
+    const segments = highlightEvidenceSentences(text, list, ['s2']);
+    expect(segments.map(s => s.highlight)).toEqual([false, true]);
+    expect(segments[1].token).toBe('admin');
+  });
+
+  test('does NOT highlight the culprit-incrimination sentence when it clears a different suspect', () => {
+    const text = 'Time 21:00 hours — the cleaner claimed she was on the third floor at this time, but the manager was in his meeting. The cleaner\'s timeline doesn\'t add up. She\'s the only one whose alibi conflicts with the calculated time.';
+    const list = suspects([
+      ['s1', 'Kiran the Guard', 'Security Guard'],
+      ['s2', 'Deepa the Cleaner', 'Office Cleaner'],
+      ['s3', 'Vikram the Manager', 'Office Manager'],
+    ]);
+    const segments = highlightEvidenceSentences(text, list, ['s3']);
+    expect(segments.map(s => s.highlight)).toEqual([true, false, false]);
+    expect(segments[0].text).toContain('manager');
+    expect(segments[0].token).toBe('manager');
+    expect(segments[1].text).toContain('cleaner');
+  });
+
+  test('returns empty array for empty text', () => {
+    const list = suspects([['s1', 'Riya the Guard', 'Night Guard']]);
+    expect(highlightEvidenceSentences('', list, ['s1'])).toEqual([]);
+  });
+
+  test('falls back to exoneration keywords when no alias matches', () => {
+    const text = 'The vault was locked tight. Someone who couldn\'t reach the key still tried. Nobody else was there that night.';
+    const list = suspects([['s1', 'Zara the Ghost', 'Unknown Visitor']]);
+    const segments = highlightEvidenceSentences(text, list, ['s1']);
+    expect(segments.filter(s => s.highlight).length).toBeGreaterThan(0);
+  });
+
+  test('all generated stories: every evidence block highlights at least one sentence with a token', () => {
+    for (const gen of Object.values(CASE_GENERATORS)) {
+      const s = gen();
+      for (const stage of s.stages) {
+        if (!stage.evidence) continue;
+        const segments = highlightEvidenceSentences(stage.evidence.text, s.suspects, stage.evidence.eliminates);
+        expect(segments.length, stage.evidence.id).toBeGreaterThan(0);
+        const highlighted = segments.filter(seg => seg.highlight);
+        expect(highlighted.length, stage.evidence.id).toBeGreaterThan(0);
+        expect(highlighted.some(seg => seg.token), stage.evidence.id).toBe(true);
+      }
+    }
+  });
+});
+
+describe('buildSuspectAliases', () => {
+  test('derives name words, role words, and abbreviations', () => {
+    expect([...buildSuspectAliases({ name: 'TA Verma', role: 'Teaching Assistant' })].sort()).toEqual(
+      ['assistant', 'ta', 'teaching', 'verma'].sort()
+    );
+    expect([...buildSuspectAliases({ name: 'Raj the IT Admin', role: 'Database Administrator' })].sort()).toEqual(
+      ['admin', 'administrator', 'database', 'it', 'raj'].sort()
+    );
+    expect([...buildSuspectAliases({ name: 'Ravi the Shopkeeper', role: 'Store Owner' })].sort()).toEqual(
+      ['owner', 'ravi', 'shopkeeper', 'store'].sort()
+    );
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════
 // validateEnhancedStory — schema validation function tests
 // ════════════════════════════════════════════════════════════════════════
 
 describe('validateEnhancedStory', () => {
-  test('all 15 enhanced stories pass validation', () => {
-    for (const story of getEnhancedStories()) {
+  test('all 15 generated enhanced stories pass validation', () => {
+    for (const gen of Object.values(CASE_GENERATORS)) {
+      const story = gen();
       const result = validateEnhancedStory(story);
       expect(result.valid).toBe(true);
       if (!result.valid) {
@@ -572,7 +670,7 @@ describe('validateEnhancedStory', () => {
       stages: [{ answer: 5, evidence: { id: 'e1', text: 'test', eliminates: [] } }],
     });
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('eliminates'))).toBe(true);
+    expect(result.errors.some(e => e.includes('eliminate at least one suspect'))).toBe(true);
   });
 
   test('rejects story with duplicate suspect IDs', () => {

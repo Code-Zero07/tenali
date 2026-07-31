@@ -89,7 +89,6 @@ const DETECTIVE_TOPICS = {
   variation: 'Variation',
   vectors: 'Vectors',
   gst: 'GST (Goods & Services Tax)',
-  profitloss: 'Profit & Loss',
 };
 
 /**
@@ -1347,973 +1346,27 @@ const ALL_DETECTIVE_STORIES = [
   },
 
   // ════════════════════════════════════════════════════════════════════════
-  // ENHANCED DETECTIVE STORIES — Suspect Elimination Mechanic
+  // ENHANCED DETECTIVE STORIES — Metadata stubs
+  // Full cases with suspects, stages, and evidence are generated dynamically
+  // by detective-generators.js (CASE_GENERATORS registry).
+  // These stubs exist solely for the case library display (title, difficulty, topic, etc.).
   // ════════════════════════════════════════════════════════════════════════
 
-  // ── GEOMETRY: The Museum Heist (Pythagoras, 3 suspects) ──────────────
-  {
-    id: 'case-enhanced-1',
-    title: 'The Museum Heist',
-    description: 'A priceless diamond vanished from the museum overnight. Three suspects remain.',
-    difficulty: 2, xpReward: 75, topic: 'pythag',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Riya the Guard', role: 'Night Guard',
-        alibi: 'Claims she was at the north gate all night.',
-        appearance: '👮', motive: 'Was passed over for promotion last month.',
-        characteristics: { height: 'short', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Arjun the Curator', role: 'Museum Curator',
-        alibi: 'Says he was cataloguing artifacts in the basement.',
-        appearance: '🧑‍🔬', motive: 'Has large gambling debts.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-      {
-        id: 'suspect-3', name: 'Priya the Cleaner', role: 'Cleaning Staff',
-        alibi: 'Says she left at 6 PM and was home by 7 PM.',
-        appearance: '🧹', motive: 'None apparent.',
-        characteristics: { height: 'very short', hand: 'left' },
-      },
-    ],
-    culprit: 'suspect-2',
-    stages: [
-      {
-        narrative: 'The security camera shows the thief entered through a doorway that is 3 metres high and 4 metres wide. How far is it from one corner of the door to the opposite corner?',
-        question: 'The doorway is 3m high and 4m wide. How far is the diagonal from one corner to the opposite corner?',
-        answer: 5,
-        hints: [
-          'The doorway forms a right-angled triangle. Think about the relationship between the two sides and the diagonal.',
-          'c² = a² + b² → c² = 3² + 4² = 25 → c = 5 metres.',
-        ],
-        evidence: {
-          id: 'evidence-1',
-          text: 'The thief was tall enough to reach a 5m diagonal entry point. This eliminates someone too short to have made this entry.',
-          eliminates: ['suspect-3'],
-        },
-      },
-      {
-        narrative: 'The security log shows the thief moved through the curator\'s wing. The corridor is 2.9 metres wide. The guard\'s north gate is 6 metres wide. This tells us which area the thief accessed.',
-        question: 'The corridor width is 2.9m. The north gate is 6m. Which area matches the entry path?',
-        answer: 'curator',
-        hints: [
-          'Compare the two measurements. The thief entered through a narrow corridor, not a wide gate.',
-          '2.9m is much narrower than 6m. The thief moved through the curator\'s wing corridor.',
-        ],
-        evidence: {
-          id: 'evidence-2',
-          text: 'The 2.9m corridor width matches the curator\'s wing of the museum. The guard\'s north gate is 6m wide. This eliminates someone who was only at the north gate.',
-          eliminates: ['suspect-1'],
-        },
-      },
-    ],
-  },
-
-  // ── GEOMETRY: The Circular Conspiracy Returns (Circle Theorems, 4 suspects) ──
-  {
-    id: 'case-enhanced-2',
-    title: 'The Circular Conspiracy Returns',
-    description: 'A circular vault was cracked open. The angles tell the story.',
-    difficulty: 3, xpReward: 90, topic: 'circleth',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Vikram the Engineer', role: 'Vault Designer',
-        alibi: 'Claims he was at a conference in Mumbai.',
-        appearance: '🔧', motive: 'His design was rejected for a new contract.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Meera the Security Chief', role: 'Head of Security',
-        alibi: 'Says she was reviewing CCTV footage in the control room.',
-        appearance: '🛡️', motive: 'Was secretly selling security plans.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-3', name: 'Raj the Night Watchman', role: 'Night Watchman',
-        alibi: 'Says he was patrolling the south corridor all night.',
-        appearance: '🔦', motive: 'Owes money to underground lenders.',
-        characteristics: { height: 'medium', hand: 'left' },
-      },
-      {
-        id: 'suspect-4', name: 'Ananya the Intern', role: 'Museum Intern',
-        alibi: 'Claims she left the museum at 5 PM before the heist.',
-        appearance: '📚', motive: 'None apparent.',
-        characteristics: { height: 'short', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-1',
-    stages: [
-      {
-        narrative: 'The vault door has a circular lock mechanism. The angle at the centre of the lock was 120°. According to circle theorems, what angle does this subtend at the circumference?',
-        question: 'If the angle at the centre is 120°, what is the angle at the circumference subtended by the same arc?',
-        answer: 60,
-        hints: [
-          'There is a theorem about the relationship between the angle at the centre and the angle at the circumference.',
-          'The angle at the centre is twice the angle at the circumference. So 120° ÷ 2 = 60°.',
-        ],
-        evidence: {
-          id: 'evidence-3',
-          text: 'The 60° angle at the circumference indicates the vault was opened using a specific technique. This technique requires knowledge of engineering drawings — not something a watchman or intern would know.',
-          eliminates: ['suspect-3', 'suspect-4'],
-        },
-      },
-      {
-        narrative: 'A second clue: the lock had a tangent line. The angle between the tangent and the radius at the point of contact was measured. What is this angle always equal to?',
-        question: 'What is the angle between a tangent and the radius at the point of contact?',
-        answer: 90,
-        hints: [
-          'There is a theorem about tangents and radii. Think about perpendicularity.',
-          'The tangent is always perpendicular to the radius at the point of contact. So the angle is 90°.',
-        ],
-        evidence: {
-          id: 'evidence-4',
-          text: 'The tangent-radius relationship was exploited to bypass the lock. The security chief would have known about this vulnerability from reviewing vault specifications.',
-          eliminates: ['suspect-2'],
-        },
-      },
-    ],
-  },
-
-  // ── TRIGONOMETRY: The Bridge Sabotage (4 suspects) ──────────────────
-  {
-    id: 'case-enhanced-3',
-    title: 'The Bridge Sabotage',
-    description: 'A bridge was sabotaged during construction. The angles reveal who did it.',
-    difficulty: 3, xpReward: 95, topic: 'trig',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Carlos the Foreman', role: 'Construction Foreman',
-        alibi: 'Says he was inspecting the north pillar.',
-        appearance: '🏗️', motive: 'Contractor offered him a cut for slowing work.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Fatima the Surveyor', role: 'Site Surveyor',
-        alibi: 'Claims she was calibrating instruments at the office.',
-        appearance: '📐', motive: 'Her measurement contract was being terminated.',
-        characteristics: { height: 'medium', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Juan the Crane Operator', role: 'Crane Operator',
-        alibi: 'Says the crane was off and he was in the break room.',
-        appearance: '🦺', motive: 'Was passed over for a promotion to foreman.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-4', name: 'Lin the Safety Inspector', role: 'Safety Inspector',
-        alibi: 'Claims she was writing her report in the trailer.',
-        appearance: '📋', motive: 'None apparent.',
-        characteristics: { height: 'short', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-2',
-    stages: [
-      {
-        narrative: 'The sabotage point was at a support beam. From 50 metres away, the angle of elevation to the top of the beam was measured at 35°. How high is the beam?',
-        question: 'From 50m away, the angle of elevation is 35°. The beam height = 50 × tan(35°). tan(35°) ≈ 0.7. What is the approximate height?',
-        answer: 35,
-        hints: [
-          'Use trigonometry. The height is the opposite side, and the distance is the adjacent side. Which trig ratio relates opposite and adjacent?',
-          'tan(θ) = opposite/adjacent → height = 50 × tan(35°) ≈ 50 × 0.7 = 35 metres.',
-        ],
-        evidence: {
-          id: 'evidence-5',
-          text: 'The 35m height matches the exact measurement from the surveyor\'s original blueprints. Only someone with access to precise survey data would know this exact dimension.',
-          eliminates: ['suspect-1', 'suspect-3'],
-        },
-      },
-      {
-        narrative: 'The support cable was cut at a 60° angle. Using the sine rule, the cut length along the cable was 4m. What is the perpendicular width of the cut?',
-        question: 'A cable is cut at 60°. The cut length is 4m. The perpendicular width = 4 × sin(60°). sin(60°) ≈ 0.866. What is the width?',
-        answer: 3.5,
-        hints: [
-          'The perpendicular width is the opposite side of a right triangle where the hypotenuse is the cut length and the angle is 60°.',
-          'Width = 4 × sin(60°) = 4 × 0.866 ≈ 3.5 metres.',
-        ],
-        evidence: {
-          id: 'evidence-6',
-          text: 'The precise 60° cut angle requires knowledge of structural engineering and trigonometric calculations. The safety inspector would not have the technical skills to make such a precise angled cut.',
-          eliminates: ['suspect-4'],
-        },
-      },
-    ],
-  },
-
-  // ── ALGEBRA: The Coded Ransom (Linear Equations, 3 suspects) ────────
-  {
-    id: 'case-enhanced-4',
-    title: 'The Coded Ransom',
-    description: 'A ransom note contains coded equations. Solve them to find the kidnapper.',
-    difficulty: 2, xpReward: 70, topic: 'lineareq',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Sam the Tutor', role: 'Private Tutor',
-        alibi: 'Claims he was teaching a student at the library.',
-        appearance: '📖', motive: 'Was fired by the victim\'s family last week.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Mia the Accountant', role: 'Family Accountant',
-        alibi: 'Says she was preparing tax documents at her office.',
-        appearance: '💰', motive: 'Discovered the family\'s hidden fortune.',
-        characteristics: { height: 'short', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Omar the Driver', role: 'Family Driver',
-        alibi: 'Says he was washing the car at the garage.',
-        appearance: '🚗', motive: 'Was caught stealing fuel last month.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-1',
-    stages: [
-      {
-        narrative: 'The ransom note says: "Three times my age, minus 5, equals 28. How old am I?" Solve the equation to get the first clue.',
-        question: '3x − 5 = 28. Solve for x.',
-        answer: 11,
-        hints: [
-          'This is a linear equation. You need to isolate x by moving constants to the other side.',
-          'Add 5: 3x = 33. Divide by 3: x = 11.',
-        ],
-        evidence: {
-          id: 'evidence-7',
-          text: 'The age 11 matches the age of the victim\'s child — the kidnapper knows the family personally. This eliminates someone who doesn\'t know the family well.',
-          eliminates: ['suspect-3'],
-        },
-      },
-      {
-        narrative: 'The second clue: "Two consecutive numbers add up to 25. What is the larger number?" This reveals a location.',
-        question: 'Two consecutive numbers add up to 25. Find the larger number.',
-        answer: 13,
-        hints: [
-          'Let the numbers be x and x+1. Set up an equation with their sum.',
-          'x + (x+1) = 25 → 2x + 1 = 25 → 2x = 24 → x = 12. Larger = 13.',
-        ],
-        evidence: {
-          id: 'evidence-8',
-          text: 'The number 13 is the apartment floor where the family lives. The kidnapper has been to their home — this eliminates someone who only met them in professional settings.',
-          eliminates: ['suspect-2'],
-        },
-      },
-    ],
-  },
-
-  // ── ALGEBRA: The Quadratic Cover-Up (Quadratic Equations, 4 suspects) ─
-  {
-    id: 'case-enhanced-5',
-    title: 'The Quadratic Cover-Up',
-    description: 'A quadratic equation was used to encode the location of stolen goods.',
-    difficulty: 3, xpReward: 85, topic: 'quadratic',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Zara the Mathematician', role: 'Professor of Mathematics',
-        alibi: 'Claims she was grading papers at the university.',
-        appearance: '🎓', motive: 'Her research funding was cut by the university.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Leo the Software Engineer', role: 'App Developer',
-        alibi: 'Says he was debugging code at a coffee shop.',
-        appearance: '💻', motive: 'Lost a contract to the victim\'s company.',
-        characteristics: { height: 'tall', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Nina the Artist', role: 'Gallery Owner',
-        alibi: 'Claims she was at an art exhibition across town.',
-        appearance: '🎨', motive: 'The victim\'s gallery was outselling hers.',
-        characteristics: { height: 'short', hand: 'right' },
-      },
-      {
-        id: 'suspect-4', name: 'Diego the Chef', role: 'Restaurant Owner',
-        alibi: 'Says he was preparing for the evening rush.',
-        appearance: '👨‍🍳', motive: 'None apparent.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-2',
-    stages: [
-      {
-        narrative: 'The stolen goods are hidden at a location described by y = x² − 6x + 8. The hideout is at the vertex of this parabola. What is the x-coordinate of the vertex?',
-        question: 'For y = x² − 6x + 8, the vertex x-coordinate = −b/(2a). What is it?',
-        answer: 3,
-        hints: [
-          'For a quadratic y = ax² + bx + c, the vertex x-coordinate has a formula involving a, b, and c.',
-          'x = −b/(2a) = −(−6)/(2×1) = 6/2 = 3.',
-        ],
-        evidence: {
-          id: 'evidence-9',
-          text: 'The x-coordinate 3 matches a warehouse address on 3rd Street. Only someone with technical knowledge would encode a location using a parabola vertex. This eliminates suspects without math training.',
-          eliminates: ['suspect-3', 'suspect-4'],
-        },
-      },
-      {
-        narrative: 'The y-coordinate of the vertex tells us the floor number. Substitute x = 3 into y = x² − 6x + 8.',
-        question: 'y = 3² − 6(3) + 8 = 9 − 18 + 8 = ?',
-        answer: -1,
-        hints: [
-          'Substitute x = 3 into the equation and calculate step by step.',
-          'y = 9 − 18 + 8 = −1. The floor is −1 (basement level).',
-        ],
-        evidence: {
-          id: 'evidence-10',
-          text: 'The basement level matches the underground parking of the software company\'s building. The mathematician would have encoded it differently — she prefers matrix notation. This points to someone in tech.',
-          eliminates: ['suspect-1'],
-        },
-      },
-    ],
-  },
-
-  // ── ALGEBRA: The Simultaneous Standoff (Simultaneous Equations, 4 suspects) ──
-  {
-    id: 'case-enhanced-6',
-    title: 'The Simultaneous Standoff',
-    description: 'Two suspects were at two locations. Equations reveal who was where.',
-    difficulty: 2, xpReward: 75, topic: 'simul',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Kate the Manager', role: 'Store Manager',
-        alibi: 'Says she was at the store closing up.',
-        appearance: '🏪', motive: 'Was embezzling from the register.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'James the Delivery Guy', role: 'Delivery Driver',
-        alibi: 'Claims he was making a late delivery across town.',
-        appearance: '📦', motive: 'Was caught smuggling packages.',
-        characteristics: { height: 'tall', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Sofia the Cashier', role: 'Part-time Cashier',
-        alibi: 'Says she left at 6 PM and was at a party.',
-        appearance: '💵', motive: 'Needed money for tuition.',
-        characteristics: { height: 'short', hand: 'right' },
-      },
-      {
-        id: 'suspect-4', name: 'Marcus the Security Guard', role: 'Night Guard',
-        alibi: 'Claims he was monitoring cameras.',
-        appearance: '📹', motive: 'Was bribed to look the other way.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-3',
-    stages: [
-      {
-        narrative: 'The security log shows two people entered the store. Their entry times satisfy: x + y = 10 and x − y = 2, where x and y are the entry hours (in 24h format). What is x?',
-        question: 'x + y = 10 and x − y = 2. Solve for x.',
-        answer: 6,
-        hints: [
-          'You have two equations with two unknowns. Try adding them together to eliminate y.',
-          'Adding: 2x = 12 → x = 6. (And y = 4.)',
-        ],
-        evidence: {
-          id: 'evidence-11',
-          text: 'x = 6 means someone entered at 6 PM. This matches the cashier\'s shift end time. The delivery driver\'s schedule doesn\'t match 6 PM.',
-          eliminates: ['suspect-2'],
-        },
-      },
-      {
-        narrative: 'The exit times satisfy: 2x + y = 16 and x − y = 2. Solve for y to find the second person\'s exit hour.',
-        question: '2x + y = 16 and x − y = 2. Find y.',
-        answer: 4,
-        hints: [
-          'From the second equation, x = y + 2. Substitute into the first equation.',
-          '2(y + 2) + y = 16 → 2y + 4 + y = 16 → 3y = 12 → y = 4.',
-        ],
-        evidence: {
-          id: 'evidence-12',
-          text: 'y = 4 means the second person left at 4 AM. Only the night guard was on duty until 4 AM. This eliminates someone who left before midnight.',
-          eliminates: ['suspect-1'],
-        },
-      },
-      {
-        narrative: 'The third clue: 3x − y = 14 and x + y = 6. Solve for x to confirm the final suspect.',
-        question: '3x − y = 14 and x + y = 6. Find x.',
-        answer: 5,
-        hints: [
-          'Add the two equations to eliminate y.',
-          'Adding: 4x = 20 → x = 5. (And y = 1.)',
-        ],
-        evidence: {
-          id: 'evidence-13',
-          text: 'x = 5 means the third person entered at 5 PM, before the store closed. The security guard was already on duty at 5 PM, but the party alibi for the cashier checks out — she arrived at the party at 5 PM. This eliminates the guard.',
-          eliminates: ['suspect-4'],
-        },
-      },
-    ],
-  },
-
-  // ── FINANCIAL: The GST Swindle (GST, 3 suspects) ────────────────────
-  {
-    id: 'case-enhanced-7',
-    title: 'The GST Swindle',
-    description: 'A shopkeeper evaded GST. The tax calculations reveal the fraud.',
-    difficulty: 2, xpReward: 70, topic: 'gst',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Raj the Shopkeeper', role: 'Electronics Store Owner',
-        alibi: 'Claims he was at a wholesale market buying stock.',
-        appearance: '🛒', motive: 'Business was failing and needed cash.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Priya the Accountant', role: 'Tax Consultant',
-        alibi: 'Says she was preparing quarterly filings for clients.',
-        appearance: '📊', motive: 'Was being audited for her own clients.',
-        characteristics: { height: 'short', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Amit the Delivery Partner', role: 'Delivery Agent',
-        alibi: 'Claims he was on deliveries all day.',
-        appearance: '🏍️', motive: 'Was caught diverting packages.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-2',
-    stages: [
-      {
-        narrative: 'An invoice shows items worth ₹50,000 with 18% GST. The GST amount was recorded as ₹7,000. Is this correct? Calculate the correct GST.',
-        question: 'GST on ₹50,000 at 18% = 0.18 × 50,000 = ?',
-        answer: 9000,
-        hints: [
-          'GST = Rate × Price. Convert 18% to a decimal and multiply.',
-          '0.18 × 50,000 = ₹9,000. The recorded amount of ₹7,000 is wrong — ₹2,000 was pocketed.',
-        ],
-        evidence: {
-          id: 'evidence-14',
-          text: 'The ₹2,000 discrepancy in GST was created by the accountant who prepared the invoice. The shopkeeper\'s handwriting doesn\'t match the invoice — the accountant wrote it.',
-          eliminates: ['suspect-1'],
-        },
-      },
-      {
-        narrative: 'The total bill including GST should be ₹50,000 + GST. But the customer paid ₹57,000 instead of the correct ₹59,000. How much was the customer short-changed?',
-        question: 'Correct total = 50,000 + 9,000 = 59,000. Customer paid 57,000. Short-changed by = 59,000 − 57,000 = ?',
-        answer: 2000,
-        hints: [
-          'Calculate the correct total first: price + GST.',
-          '59,000 − 57,000 = ₹2,000. The same ₹2,000 discrepancy.',
-        ],
-        evidence: {
-          id: 'evidence-15',
-          text: 'The ₹2,000 difference was routed through a separate account. Only someone with access to financial records could set up this redirect. The delivery partner doesn\'t handle invoices.',
-          eliminates: ['suspect-3'],
-        },
-      },
-    ],
-  },
-
-  // ── FINANCIAL: The Stock Market Mystery (Shares & Dividends, 4 suspects) ──
-  {
-    id: 'case-enhanced-8',
-    title: 'The Stock Market Mystery',
-    description: 'A broker manipulated share prices. The dividend calculations expose the fraud.',
-    difficulty: 3, xpReward: 85, topic: 'shares',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Helen the Broker', role: 'Stock Broker',
-        alibi: 'Claims she was at a client meeting all morning.',
-        appearance: '📈', motive: 'Was losing clients to a competitor.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'George the Analyst', role: 'Financial Analyst',
-        alibi: 'Says he was preparing a market report.',
-        appearance: '📉', motive: 'His bonus was tied to stock performance.',
-        characteristics: { height: 'tall', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Yuki the IT Manager', role: 'Trading Systems Admin',
-        alibi: 'Claims she was fixing server issues.',
-        appearance: '🖥️', motive: 'Was being laid off next month.',
-        characteristics: { height: 'short', hand: 'right' },
-      },
-      {
-        id: 'suspect-4', name: 'Paul the Client', role: 'VIP Client',
-        alibi: 'Says he was at a golf tournament.',
-        appearance: '⛳', motive: 'Wanted to buy shares at a lower price.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-3',
-    stages: [
-      {
-        narrative: 'A company has 10,000 shares at ₹100 each. A 12% dividend was declared. The correct dividend per share should be?',
-        question: 'Dividend per share = 12% of ₹100 = 0.12 × 100 = ?',
-        answer: 12,
-        hints: [
-          'Dividend = Rate × Face Value. Convert 12% to a decimal.',
-          '0.12 × 100 = ₹12 per share.',
-        ],
-        evidence: {
-          id: 'evidence-16',
-          text: 'The system showed ₹10 per share instead of ₹12. The discrepancy of ₹2 per share was routed to an offshore account. Only someone with system access could alter dividend records.',
-          eliminates: ['suspect-1', 'suspect-4'],
-        },
-      },
-      {
-        narrative: 'Total dividend should be 10,000 × ₹12 = ₹1,20,000. But only ₹1,00,000 was paid out. Where did the remaining ₹20,000 go?',
-        question: 'Total shortfall = 1,20,000 − 1,00,000 = ?',
-        answer: 20000,
-        hints: [
-          'Calculate the total dividend first: shares × dividend per share.',
-          '1,20,000 − 1,00,000 = ₹20,000 shortfall.',
-        ],
-        evidence: {
-          id: 'evidence-17',
-          text: 'The ₹20,000 was transferred through the trading system. The IT manager had direct access to modify transaction records. The analyst only sees reports, he can\'t modify them.',
-          eliminates: ['suspect-2'],
-        },
-      },
-    ],
-  },
-
-  // ── FINANCIAL: The Profit & Loss Conspiracy (3 suspects) ────────────
-  {
-    id: 'case-enhanced-9',
-    title: 'The Profit & Loss Conspiracy',
-    description: 'A merchant manipulated profit margins. The numbers tell the truth.',
-    difficulty: 1, xpReward: 60, topic: 'profitloss',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Tom the Merchant', role: 'Wholesale Dealer',
-        alibi: 'Claims he was at the warehouse receiving goods.',
-        appearance: '🏪', motive: 'Competition was eating into his margins.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Lisa the Bookkeeper', role: 'Accountant',
-        alibi: 'Says she was reconciling accounts.',
-        appearance: '📒', motive: 'Was being investigated for tax evasion.',
-        characteristics: { height: 'medium', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Jake the Warehouse Manager', role: 'Warehouse Supervisor',
-        alibi: 'Claims he was doing inventory counts.',
-        appearance: '📦', motive: 'Was caught taking stock home.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-2',
-    stages: [
-      {
-        narrative: 'Goods bought for ₹800 were sold for ₹1,000. The recorded profit was ₹150. But the real profit should be?',
-        question: 'Profit = Selling Price − Cost Price = 1,000 − 800 = ?',
-        answer: 200,
-        hints: [
-          'Profit is the difference between what you sell something for and what it cost.',
-          '1,000 − 800 = ₹200. The recorded ₹150 is ₹50 less than the actual profit.',
-        ],
-        evidence: {
-          id: 'evidence-18',
-          text: 'The ₹50 discrepancy was hidden in the books. The bookkeeper recorded a lower profit to reduce tax liability. The merchant\'s sales receipt shows ₹1,000.',
-          eliminates: ['suspect-1'],
-        },
-      },
-      {
-        narrative: 'Another item: cost ₹2,000, sold at a 15% loss. The selling price should be?',
-        question: 'Loss = 15% of 2,000 = 300. Selling Price = 2,000 − 300 = ?',
-        answer: 1700,
-        hints: [
-          'First calculate the loss amount: 15% of the cost price.',
-          'Loss = 0.15 × 2,000 = ₹300. SP = 2,000 − 300 = ₹1,700.',
-        ],
-        evidence: {
-          id: 'evidence-19',
-          text: 'The selling price of ₹1,700 was recorded as ₹1,500 in the books — another ₹200 hidden. Only the bookkeeper has access to modify ledger entries.',
-          eliminates: ['suspect-3'],
-        },
-      },
-    ],
-  },
-
-  // ── STATISTICS: The Dice Game Rigged (Probability, 4 suspects) ──────
-  {
-    id: 'case-enhanced-10',
-    title: 'The Dice Game Rigged',
-    description: 'A casino game was rigged. Probability exposes the cheat.',
-    difficulty: 2, xpReward: 75, topic: 'prob',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Tony the Dealer', role: 'Card Dealer',
-        alibi: 'Claims he was dealing at Table 7 all night.',
-        appearance: '🃏', motive: 'Owed money to a gambling ring.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Rosa the Pit Boss', role: 'Pit Boss',
-        alibi: 'Says she was supervising the floor.',
-        appearance: '🎰', motive: 'Was being replaced by a younger manager.',
-        characteristics: { height: 'short', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Chen the Dice Maker', role: 'Custom Dice Supplier',
-        alibi: 'Claims he was at a trade show.',
-        appearance: '🎲', motive: 'His business was failing.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-      {
-        id: 'suspect-4', name: 'Ava the Floor Manager', role: 'Floor Manager',
-        alibi: 'Says she was in her office doing paperwork.',
-        appearance: '📋', motive: 'None apparent.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-3',
-    stages: [
-      {
-        narrative: 'A fair 6-sided die should land on 6 with probability 1/6. But this die landed on 6 forty times out of 120 rolls. What is the experimental probability?',
-        question: 'Experimental P(6) = 40/120 = ? (simplified fraction)',
-        answer: '1/3',
-        hints: [
-          'Probability = favorable outcomes / total outcomes. Simplify the fraction.',
-          '40/120 = 1/3. This is double the expected 1/6 — the die is loaded!',
-        ],
-        evidence: {
-          id: 'evidence-20',
-          text: 'The loaded die has a 1/3 probability of landing on 6 instead of 1/6. Only the dice supplier could have provided a loaded die. The dealer just uses whatever dice are given.',
-          eliminates: ['suspect-1', 'suspect-4'],
-        },
-      },
-      {
-        narrative: 'Two such loaded dice are rolled. What is the probability of getting a sum of 12? (Both show 6.)',
-        question: 'P(sum = 12) with two loaded dice = P(6) × P(6) = (1/3) × (1/3) = ?',
-        answer: '1/9',
-        hints: [
-          'For independent events, multiply the probabilities.',
-          '(1/3) × (1/3) = 1/9. On a fair die it would be 1/36 — this is 4× higher!',
-        ],
-        evidence: {
-          id: 'evidence-21',
-          text: 'The 1/9 probability is 4 times higher than fair. The pit boss would notice unusual winning patterns but couldn\'t physically replace the dice — only the supplier provides them.',
-          eliminates: ['suspect-2'],
-        },
-      },
-    ],
-  },
-
-  // ── STATISTICS: The Data Breach (Statistics, 4 suspects) ────────────
-  {
-    id: 'case-enhanced-11',
-    title: 'The Data Breach',
-    description: 'A data analyst manipulated statistics. Find the true mean.',
-    difficulty: 2, xpReward: 70, topic: 'stats',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Elena the Analyst', role: 'Data Analyst',
-        alibi: 'Claims she was running reports for the quarterly review.',
-        appearance: '📊', motive: 'Was about to be fired for poor performance.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Raj the IT Admin', role: 'Database Administrator',
-        alibi: 'Says he was performing server maintenance.',
-        appearance: '🗄️', motive: 'Was being outsourced to a cheaper contractor.',
-        characteristics: { height: 'tall', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Sara the Manager', role: 'Department Manager',
-        alibi: 'Claims she was in meetings all day.',
-        appearance: '👔', motive: 'Her bonus depended on good quarterly numbers.',
-        characteristics: { height: 'short', hand: 'right' },
-      },
-      {
-        id: 'suspect-4', name: 'Kumar the Intern', role: 'Data Science Intern',
-        alibi: 'Says he was shadowing the analyst.',
-        appearance: '🎓', motive: 'None apparent.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-1',
-    stages: [
-      {
-        narrative: 'Five quarterly revenue figures: ₹200, ₹350, ₹400, ₹500, ₹550 (in thousands). What is the true mean?',
-        question: 'Mean = (200 + 350 + 400 + 500 + 550) ÷ 5 = ?',
-        answer: 400,
-        hints: [
-          'Add all the values and divide by the count.',
-          'Sum = 200 + 350 + 400 + 500 + 550 = 2,000. Mean = 2,000 ÷ 5 = 400.',
-        ],
-        evidence: {
-          id: 'evidence-22',
-          text: 'The true mean is ₹400K but the report showed ₹450K. The analyst inflated the mean by ₹50K. Only she had access to the statistical software to alter calculations.',
-          eliminates: ['suspect-2', 'suspect-4'],
-        },
-      },
-      {
-        narrative: 'What is the median of the same data set? The median is harder to manipulate.',
-        question: 'Data in order: 200, 350, 400, 500, 550. Median = middle value = ?',
-        answer: 400,
-        hints: [
-          'The median is the middle value when data is sorted.',
-          'With 5 values, the median is the 3rd value: 400.',
-        ],
-        evidence: {
-          id: 'evidence-23',
-          text: 'Both mean and median are 400. The report showed mean 450 but median 400 — a red flag. The manager would see the discrepancy but couldn\'t have altered the data itself.',
-          eliminates: ['suspect-3'],
-        },
-      },
-    ],
-  },
-
-  // ── STATISTICS: The Permutation Puzzle (Permutations & Combinations, 4 suspects) ──
-  {
-    id: 'case-enhanced-12',
-    title: 'The Permutation Puzzle',
-    description: 'A lock combination was cracked using permutations. Who knew the code?',
-    difficulty: 3, xpReward: 85, topic: 'permcomb',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Diana the Locksmith', role: 'Security Consultant',
-        alibi: 'Claims she was at a security conference.',
-        appearance: '🔐', motive: 'Was being sued for a faulty lock design.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Marco the Guard', role: 'Security Guard',
-        alibi: 'Says he was at his post all night.',
-        appearance: '💂', motive: 'Was being transferred to a less desirable shift.',
-        characteristics: { height: 'tall', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Lily the Receptionist', role: 'Front Desk Officer',
-        alibi: 'Claims she left at 5 PM.',
-        appearance: '🌸', motive: 'Was caught making personal calls on company time.',
-        characteristics: { height: 'short', hand: 'right' },
-      },
-      {
-        id: 'suspect-4', name: 'Oscar the CEO', role: 'Company CEO',
-        alibi: 'Says he was at a board dinner.',
-        appearance: '👔', motive: 'Was secretly selling company secrets.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-2',
-    stages: [
-      {
-        narrative: 'The vault lock has a 4-digit code using digits 1-4, with no repeats. How many possible combinations are there?',
-        question: 'Number of 4-digit codes from {1,2,3,4} with no repeats = 4! = ?',
-        answer: 24,
-        hints: [
-          'When arranging n items with no repeats, use factorial.',
-          '4! = 4 × 3 × 2 × 1 = 24 possible combinations.',
-        ],
-        evidence: {
-          id: 'evidence-24',
-          text: 'With only 24 possible combinations, someone with unlimited tries could crack it in minutes. The guard was on duty with access to the vault — he had time to try all combinations.',
-          eliminates: ['suspect-3', 'suspect-4'],
-        },
-      },
-      {
-        narrative: 'The lock was actually a 3-digit code from digits 0-9, with repeats allowed. How many possible codes are there?',
-        question: '3-digit codes from 0-9 with repeats = 10 × 10 × 10 = ?',
-        answer: 1000,
-        hints: [
-          'With repeats allowed, each position has 10 choices.',
-          '10 × 10 × 10 = 1,000 possible codes.',
-        ],
-        evidence: {
-          id: 'evidence-25',
-          text: '1,000 codes is too many to try manually. The guard had insider knowledge of the code pattern. The locksmith would design the lock, not crack it.',
-          eliminates: ['suspect-1'],
-        },
-      },
-    ],
-  },
-
-  // ── CALCULUS: The Derivative Detective (Differentiation, 4 suspects) ──
-  {
-    id: 'case-enhanced-13',
-    title: 'The Derivative Detective',
-    description: 'A criminal used derivatives to encode their escape route.',
-    difficulty: 3, xpReward: 90, topic: 'diff',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Dr. Newton', role: 'Physics Professor',
-        alibi: 'Claims he was lecturing at the university.',
-        appearance: '🔬', motive: 'His research grant was stolen by the victim.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Ada the Programmer', role: 'AI Engineer',
-        alibi: 'Says she was coding at a hackathon.',
-        appearance: '🤖', motive: 'The victim stole her algorithm.',
-        characteristics: { height: 'short', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Max the Engineer', role: 'Structural Engineer',
-        alibi: 'Claims he was at a construction site.',
-        appearance: '🏗️', motive: 'Was being sued for structural failures.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-      {
-        id: 'suspect-4', name: 'Sophie the Analyst', role: 'Financial Analyst',
-        alibi: 'Says she was preparing market projections.',
-        appearance: '📈', motive: 'None apparent.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-2',
-    stages: [
-      {
-        narrative: 'The escape route is described by y = x³ − 6x² + 9x + 1. The gradient at the escape point x = 2 tells us the direction. What is dy/dx at x = 2?',
-        question: 'dy/dx = 3x² − 12x + 9. At x = 2: 3(4) − 12(2) + 9 = ?',
-        answer: -3,
-        hints: [
-          'Differentiate each term using the power rule: d/dx(xⁿ) = nxⁿ⁻¹.',
-          'dy/dx = 3x² − 12x + 9. At x = 2: 12 − 24 + 9 = −3.',
-        ],
-        evidence: {
-          id: 'evidence-26',
-          text: 'The gradient of −3 means the escape route goes steeply downhill. This type of calculus encoding is used in computer algorithms — not by a structural engineer or physicist in their daily work.',
-          eliminates: ['suspect-3', 'suspect-1'],
-        },
-      },
-      {
-        narrative: 'The turning point of the route occurs where dy/dx = 0. Find the x-coordinate of the turning point.',
-        question: '3x² − 12x + 9 = 0. Solve for x. Factor: 3(x² − 4x + 3) = 0.',
-        answer: 1,
-        hints: [
-          'Set the derivative to zero and solve the quadratic.',
-          '3(x² − 4x + 3) = 0 → 3(x−1)(x−3) = 0 → x = 1 or x = 3. The first turning point is x = 1.',
-        ],
-        evidence: {
-          id: 'evidence-27',
-          text: 'The turning point at x = 1 corresponds to a building number. The programmer uses coordinate-based location encoding in her apps — this is her signature.',
-          eliminates: ['suspect-4'],
-        },
-      },
-    ],
-  },
-
-  // ── CALCULUS: The Integration Investigation (Integration, 4 suspects) ──
-  {
-    id: 'case-enhanced-14',
-    title: 'The Integration Investigation',
-    description: 'Integration reveals the area under the criminal\'s plan.',
-    difficulty: 3, xpReward: 90, topic: 'integ',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Prof. Gauss', role: 'Mathematics Professor',
-        alibi: 'Claims he was grading final exams.',
-        appearance: '🎓', motive: 'The victim plagiarized his published paper.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Nina the Architect', role: 'Building Architect',
-        alibi: 'Says she was drafting blueprints.',
-        appearance: '📐', motive: 'Her building design was rejected in favor of the victim\'s.',
-        characteristics: { height: 'short', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Ravi the Pilot', role: 'Commercial Pilot',
-        alibi: 'Claims he was on a flight to Delhi.',
-        appearance: '✈️', motive: 'Was caught smuggling items in cargo.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-      {
-        id: 'suspect-4', name: 'Lisa the Chemist', role: 'Lab Researcher',
-        alibi: 'Says she was conducting experiments.',
-        appearance: '🧪', motive: 'None apparent.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-2',
-    stages: [
-      {
-        narrative: 'The criminal\'s path follows the curve y = 2x + 1 from x = 0 to x = 3. The area under this curve represents the distance covered. Find the area.',
-        question: '∫₀³ (2x + 1) dx = [x² + x] from 0 to 3 = (9 + 3) − 0 = ?',
-        answer: 12,
-        hints: [
-          'Integrate the function, then evaluate at the limits.',
-          '∫(2x+1) dx = x² + x. At x=3: 9+3=12. At x=0: 0. Area = 12.',
-        ],
-        evidence: {
-          id: 'evidence-28',
-          text: 'The area of 12 square units corresponds to a blueprint grid measurement. The architect uses area calculations for building designs — this is her area of expertise.',
-          eliminates: ['suspect-3', 'suspect-4'],
-        },
-      },
-      {
-        narrative: 'A second path follows y = 3x² − 2x from x = 1 to x = 2. Find this area.',
-        question: '∫₁² (3x² − 2x) dx = [x³ − x²] from 1 to 2 = (8−4) − (1−1) = ?',
-        answer: 4,
-        hints: [
-          'Integrate: ∫(3x²−2x) dx = x³ − x².',
-          'At x=2: 8−4=4. At x=1: 1−1=0. Area = 4−0 = 4.',
-        ],
-        evidence: {
-          id: 'evidence-29',
-          text: 'The area of 4 square units matches the floor plan of a specific building. The architect\'s blueprints were found to have this exact area marking. The professor grades papers — he doesn\'t draft buildings.',
-          eliminates: ['suspect-1'],
-        },
-      },
-    ],
-  },
-
-  // ── CALCULUS: The Limit Labyrinth (Limits, 4 suspects) ──────────────
-  {
-    id: 'case-enhanced-15',
-    title: 'The Limit Labyrinth',
-    description: 'A limit describes the value the suspect approached as they escaped.',
-    difficulty: 3, xpReward: 85, topic: 'limits',
-    suspects: [
-      {
-        id: 'suspect-1', name: 'Dr. Euler', role: 'Theoretical Physicist',
-        alibi: 'Claims he was at a physics symposium.',
-        appearance: '⚛️', motive: 'His theory was proven wrong by the victim.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-      {
-        id: 'suspect-2', name: 'Maya the Coder', role: 'Algorithm Developer',
-        alibi: 'Says she was optimizing search algorithms.',
-        appearance: '💻', motive: 'The victim patented her algorithm first.',
-        characteristics: { height: 'short', hand: 'left' },
-      },
-      {
-        id: 'suspect-3', name: 'Tom the Mechanic', role: 'Auto Workshop Owner',
-        alibi: 'Claims he was repairing a car engine.',
-        appearance: '🔧', motive: 'The victim\'s car review cost him business.',
-        characteristics: { height: 'tall', hand: 'right' },
-      },
-      {
-        id: 'suspect-4', name: 'Aria the Teacher', role: 'High School Math Teacher',
-        alibi: 'Says she was preparing lesson plans.',
-        appearance: '📚', motive: 'None apparent.',
-        characteristics: { height: 'medium', hand: 'right' },
-      },
-    ],
-    culprit: 'suspect-2',
-    stages: [
-      {
-        narrative: 'The escape route approaches a critical value. Find lim(x→2) (x² − 4)/(x − 2). This simplifies to reveal the route number.',
-        question: '(x²−4)/(x−2) = (x−2)(x+2)/(x−2). As x→2, limit = 2+2 = ?',
-        answer: 4,
-        hints: [
-          'Factor the numerator. It might cancel with the denominator.',
-          'x²−4 = (x−2)(x+2). Cancel (x−2): result is x+2. As x→2, limit = 4.',
-        ],
-        evidence: {
-          id: 'evidence-30',
-          text: 'The limit value of 4 corresponds to a server room number. Algorithm developers use limits in computational complexity analysis — this is second nature to a coder.',
-          eliminates: ['suspect-3', 'suspect-4'],
-        },
-      },
-      {
-        narrative: 'The second clue: find lim(x→0) sin(x)/x. This is a fundamental limit that reveals the encryption key.',
-        question: 'lim(x→0) sin(x)/x = ?',
-        answer: 1,
-        hints: [
-          'This is a well-known standard limit in calculus.',
-          'lim(x→0) sin(x)/x = 1. This is one of the most important limits in mathematics.',
-        ],
-        evidence: {
-          id: 'evidence-31',
-          text: 'The encryption key is 1. The physicist uses this limit in wave equations daily. But the coder uses it in signal processing algorithms — both know it, but only the coder would use it as an encryption key.',
-          eliminates: ['suspect-1'],
-        },
-      },
-    ],
-  },
+  { id: 'case-enhanced-1',  title: 'The Museum Heist',              description: 'A priceless diamond vanished from the museum overnight. Three suspects remain.',                      difficulty: 2, xpReward: 75, topic: 'pythag',    suspects: [] },
+  { id: 'case-enhanced-2',  title: 'The Circular Conspiracy Returns', description: 'A circular vault was cracked open. The angles tell the story.',                                        difficulty: 3, xpReward: 90, topic: 'circleth',  suspects: [] },
+  { id: 'case-enhanced-3',  title: 'The Bridge Sabotage',           description: 'A bridge was sabotaged during construction. The angles reveal who did it.',                                 difficulty: 3, xpReward: 95, topic: 'trig',      suspects: [] },
+  { id: 'case-enhanced-4',  title: 'The Coded Ransom',              description: 'A ransom note contains coded equations. Solve them to find the kidnapper.',                                  difficulty: 2, xpReward: 70, topic: 'lineareq',  suspects: [] },
+  { id: 'case-enhanced-5',  title: 'The Quadratic Cover-Up',        description: 'A quadratic equation was used to encode the location of stolen goods.',                                     difficulty: 3, xpReward: 85, topic: 'quadratic', suspects: [] },
+  { id: 'case-enhanced-6',  title: 'The Simultaneous Standoff',     description: 'Two suspects were at two locations. Equations reveal who was where.',                                       difficulty: 2, xpReward: 75, topic: 'simul',     suspects: [] },
+  { id: 'case-enhanced-7',  title: 'The GST Swindle',               description: 'A shopkeeper evaded GST. The tax calculations reveal the fraud.',                                          difficulty: 2, xpReward: 70, topic: 'gst',       suspects: [] },
+  { id: 'case-enhanced-8',  title: 'The Stock Market Mystery',      description: 'A broker manipulated share prices. The dividend calculations expose the fraud.',                           difficulty: 3, xpReward: 85, topic: 'shares',    suspects: [] },
+  { id: 'case-enhanced-9',  title: 'The Profit & Loss Conspiracy',  description: 'The Corner Mart accounts don\'t add up. Someone is cooking the books — can you crack the case?',        difficulty: 1, xpReward: 60, topic: 'profitloss', suspects: [] },
+  { id: 'case-enhanced-10', title: 'The Dice Game Rigged',          description: 'A casino game was rigged. Probability exposes the cheat.',                                                difficulty: 2, xpReward: 75, topic: 'prob',      suspects: [] },
+  { id: 'case-enhanced-11', title: 'The Data Breach',              description: 'A data analyst manipulated statistics. Find the true mean.',                                              difficulty: 2, xpReward: 70, topic: 'stats',     suspects: [] },
+  { id: 'case-enhanced-12', title: 'The Permutation Puzzle',        description: 'A lock combination was cracked using permutations. Who knew the code?',                                    difficulty: 3, xpReward: 85, topic: 'permcomb',  suspects: [] },
+  { id: 'case-enhanced-13', title: 'The Derivative Detective',      description: 'A criminal used derivatives to encode their escape route.',                                                difficulty: 3, xpReward: 90, topic: 'diff',      suspects: [] },
+  { id: 'case-enhanced-14', title: 'The Integration Investigation', description: 'Integration reveals the area under the criminal\'s plan.',                                               difficulty: 3, xpReward: 90, topic: 'integ',     suspects: [] },
+  { id: 'case-enhanced-15', title: 'The Limit Labyrinth',           description: 'A limit describes the value the suspect approached as they escaped.',                                       difficulty: 3, xpReward: 85, topic: 'limits',    suspects: [] },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -2322,7 +1375,7 @@ const ALL_DETECTIVE_STORIES = [
  * Check if a story is an enhanced case (has suspects array).
  */
 function isEnhancedCase(story) {
-  return !!(story && story.suspects && story.suspects.length > 0);
+  return !!(story && story.id && story.id.startsWith('case-enhanced-'));
 }
 
 /**
@@ -2381,12 +1434,74 @@ function getCaseCountByTopic() {
   return counts;
 }
 
+// ── Dynamic Story Generators have moved to detective-generators.js ──────
+
 /**
  * Generate elimination reasons for a suspect based on evidence and suspect profile.
  * Returns exactly 3 options: 1 correct + 2 wrong distractors.
  * The correct reason is the best-matching one from the suspect's profile vs evidence.
  * Wrong reasons are plausible-sounding but incorrect (from other suspects' profiles).
  */
+// ─── Evidence highlight helpers ──────────────────────────────────────────
+
+const ALIAS_STOPWORDS = new Set(['the', 'of', 'and', 'a', 'an', 'at']);
+const EVIDENCE_SENTENCE_SPLIT = /(?<=[.!?])\s+(?=[A-Z0-9₹])/;
+const EXONERATION_RE = /couldn't|doesn't|don't|didn't|wasn't|weren't|can't|never|no access|lacks|without|not\b/i;
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Build the set of text tokens that identify a suspect in evidence text:
+ * words from the suspect's name, words from the role, plus two common
+ * abbreviations ("Teaching Assistant" → ta, "Database Administrator" → admin).
+ */
+function buildSuspectAliases(suspect) {
+  const aliases = new Set();
+  const add = (w) => { if (w.length >= 2 && !ALIAS_STOPWORDS.has(w)) aliases.add(w); };
+  for (const w of suspect.name.toLowerCase().split(/[^a-z0-9]+/)) add(w);
+  for (const w of suspect.role.toLowerCase().split(/[^a-z0-9]+/)) if (w.length >= 3) add(w);
+  const role = suspect.role.toLowerCase();
+  if (role.includes('teaching assistant')) { aliases.add('ta'); aliases.add('assistant'); }
+  if (role.includes('database')) { aliases.add('admin'); aliases.add('administrator'); }
+  return aliases;
+}
+
+/**
+ * Split an evidence text into sentences and mark the sentences that reference
+ * one of the eliminated suspects (by name or role token). Longer aliases are
+ * preferred so the bolded token is the most specific match. Falls back to
+ * exoneration-keyword scoring when nothing matches.
+ */
+function highlightEvidenceSentences(text, suspects, eliminatedIds) {
+  const eliminated = (suspects || []).filter((s) => (eliminatedIds || []).includes(s.id));
+  const aliases = eliminated
+    .flatMap((s) => [...buildSuspectAliases(s)])
+    .sort((a, b) => b.length - a.length || a.localeCompare(b));
+  const result = (text || '').split(EVIDENCE_SENTENCE_SPLIT).map((t) => t.trim()).filter(Boolean)
+    .map((t) => ({ text: t, highlight: false, token: null }));
+  for (const item of result) {
+    for (const alias of aliases) {
+      if (new RegExp(`\\b${escapeRegex(alias)}\\b`, 'i').test(item.text)) {
+        item.highlight = true;
+        item.token = alias;
+        break;
+      }
+    }
+  }
+  if (!result.some((r) => r.highlight)) {
+    let bestIdx = -1;
+    let bestHits = 0;
+    for (let i = 0; i < result.length; i++) {
+      const hits = (result[i].text.match(EXONERATION_RE) || []).length;
+      if (hits > bestHits) { bestHits = hits; bestIdx = i; }
+    }
+    if (bestIdx >= 0 && bestHits > 0) result[bestIdx].highlight = true;
+  }
+  return result;
+}
+
 function getEliminationReasons(evidence, suspect, allSuspects) {
   const text = (evidence.text || '').toLowerCase();
   const chars = suspect.characteristics || {};
@@ -2519,5 +1634,9 @@ export {
   getEnhancedStories,
   isEnhancedCase,
   getEliminationReasons,
+  buildSuspectAliases,
+  highlightEvidenceSentences,
+  escapeRegex,
   validateEnhancedStory,
+
 };
