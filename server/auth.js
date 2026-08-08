@@ -3,7 +3,7 @@
  *
  * Exposes:
  *   - connectMongo(uri):       Promise that resolves once Mongo is connected.
- *   - seedUsers():             Inserts the two hardcoded users if not present.
+ *   - seedUsers():             Seeds users listed in TENALI_SEED_USERS if not present.
  *   - router (Express Router): /api/auth/login  POST {username, password}
  *                              /api/auth/me     GET  (requires Bearer token)
  *   - requireAuth (middleware): blocks if no/invalid Bearer token.
@@ -13,13 +13,15 @@
  *   JWT_SECRET        REQUIRED in production (server refuses to start without it);
  *                     dev-only fallback is the public default, used with a warning
  *   JWT_TTL           default '14d'
- *   TENALI_SEED_USERS comma-separated "username:password" pairs to seed (no default)
+ *   TENALI_SEED_USERS comma-separated "username:password[:role]" entries to seed
+ *                     (no default). Use ":admin" on one entry for proctor access.
  */
 
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const logger = require('./lib/logger');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/tenali';
 const DEFAULT_DEV_SECRET = 'tenali-dev-secret-change-me';
@@ -34,7 +36,7 @@ if (process.env.NODE_ENV === 'production' &&
   throw new Error('JWT_SECRET must be set to a strong, non-default value in production — refusing to start.');
 }
 if (JWT_SECRET === DEFAULT_DEV_SECRET) {
-  console.warn('[auth] WARNING: using the built-in development JWT secret. Set JWT_SECRET before deploying.');
+  logger.warn(null,'[auth] WARNING: using the built-in development JWT secret. Set JWT_SECRET before deploying.');
 }
 
 // ─── Mongoose schema ─────────────────────────────────────────────────────────
@@ -84,8 +86,18 @@ const ProgressSchema = new mongoose.Schema({
 // Ensure a user has only one progress document per topic
 ProgressSchema.index({ userId: 1, topic: 1 }, { unique: true });
 
+const ContrastProgressSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true, index: true },
+  completedModules: { type: [String], default: [] },
+  unlockedPairs: { type: [String], default: [] },
+  seenPairs: { type: [String], default: [] },
+  completedPairs: { type: [String], default: [] },
+  updatedAt: { type: Date, default: Date.now }
+});
+
 const User = mongoose.model('User', UserSchema);
 const Progress = mongoose.model('Progress', ProgressSchema);
+const ContrastProgress = mongoose.model('ContrastProgress', ContrastProgressSchema);
 
 const StudentAttemptLogSchema = new mongoose.Schema({
   studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
@@ -168,28 +180,33 @@ async function connectMongo(uri = MONGO_URI) {
 }
 
 // Seed users come from the TENALI_SEED_USERS env var as a comma-separated list of
-// "username:password" pairs (e.g. "alice:pw1,bob:pw2"), so credentials are never
-// committed to source. If unset, no users are seeded — existing DB users still log in.
+// "username:password" or "username:password:role" entries (e.g.
+// "alice:pw1,admin:pw2:admin"), so NO credentials — including the admin account —
+// are committed to source. If unset, no users are seeded and existing DB users
+// still log in. The admin entry (role "admin") gates the proctor dashboard, so a
+// deploy that needs proctor access must include one in TENALI_SEED_USERS.
 const ENV_SEED_USERS = (process.env.TENALI_SEED_USERS || '')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean)
-  .map((pair) => {
-    const i = pair.indexOf(':');
-    return i === -1
-      ? null
-      : { username: pair.slice(0, i).trim(), password: pair.slice(i + 1) };
+  .map((entry) => {
+    const parts = entry.split(':');
+    if (parts.length < 2) return null;
+    // First field is the username; a trailing 3rd+ field is the role. Anything
+    // in between is the password (so passwords may themselves contain colons).
+    const username = parts[0].trim();
+    const role = parts.length >= 3 ? parts[parts.length - 1].trim() : undefined;
+    const password = (parts.length >= 3 ? parts.slice(1, -1) : parts.slice(1)).join(':');
+    return { username, password, role };
   })
   .filter((u) => u && u.username && u.password);
 
-// Always include the admin account for proctor dashboard access
-const SEED_USERS = [
-  ...ENV_SEED_USERS,
-  { username: 'admin', password: 'tenaliadmin', role: 'admin' },
-];
+const SEED_USERS = [...ENV_SEED_USERS];
 
 if (ENV_SEED_USERS.length === 0) {
-  console.warn('[auth] No TENALI_SEED_USERS configured — relying on admin seed + existing DB users.');
+  logger.warn(null,'[auth] No TENALI_SEED_USERS configured — relying only on existing DB users. No admin will be seeded.');
+} else if (!ENV_SEED_USERS.some((u) => u.role === 'admin')) {
+  logger.warn(null,'[auth] No admin entry in TENALI_SEED_USERS — proctor dashboard access will be unavailable until one is added (format "user:pass:admin").');
 }
 
 // In-memory fallback used when MongoDB is unavailable.
@@ -276,4 +293,4 @@ router.get('/me', requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
 
-module.exports = { connectMongo, seedUsers, router, requireAuth, requireAdmin, JWT_SECRET, User, Progress, StudentAttemptLog, UserStats, UserMilestone, UserTopicProgress, UserCollectionProgress };
+module.exports = { connectMongo, seedUsers, router, requireAuth, requireAdmin, JWT_SECRET, User, Progress, ContrastProgress, StudentAttemptLog, UserStats, UserMilestone, UserTopicProgress, UserCollectionProgress };

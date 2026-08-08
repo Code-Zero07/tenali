@@ -73,7 +73,7 @@ Each quiz tracks `adaptScore` (float 0–3). Correct → +0.15 to +0.5; wrong �
 
 ### Deployment topology
 ```
-tenali.fun (DNS → 143.110.241.156)
+tenali.fun (DNS → <production IP — see README deployment section>)
   └── Nginx (SSL via Let's Encrypt, /etc/nginx/sites-available/tenali)
         └── proxy_pass http://127.0.0.1:4000
               └── tenali.service (systemd, runs as tenali user)

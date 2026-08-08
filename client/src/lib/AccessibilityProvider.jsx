@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useI18n, LANGUAGES } from './i18n';
 
 const AccessibilityContext = createContext();
@@ -59,6 +59,8 @@ export function AccessibilityProvider({ children }) {
 
   const [mouseY, setMouseY] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const panelRef = useRef(null);
+  const openButtonRef = useRef(null);
 
   // Free Web Speech API Text-to-Speech
   const readAloud = (text) => {
@@ -101,6 +103,45 @@ export function AccessibilityProvider({ children }) {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [readingRuler]);
 
+  // Modal a11y: move focus into the panel on open, restore it on close,
+  // close on Escape, and trap Tab navigation inside the panel.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const panel = panelRef.current;
+    const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const getFocusable = () => panel ? Array.from(panel.querySelectorAll(focusableSelector)) : [];
+
+    const first = getFocusable()[0];
+    if (first) first.focus();
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const focusable = getFocusable();
+      if (focusable.length === 0) return;
+      const firstEl = focusable[0];
+      const lastEl = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === firstEl) {
+        e.preventDefault();
+        lastEl.focus();
+      } else if (!e.shiftKey && document.activeElement === lastEl) {
+        e.preventDefault();
+        firstEl.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    const triggerButton = openButtonRef.current;
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (triggerButton) triggerButton.focus();
+    };
+  }, [isOpen]);
+
   return (
     <AccessibilityContext.Provider value={{
       dyslexiaFont, setDyslexiaFont,
@@ -116,10 +157,13 @@ export function AccessibilityProvider({ children }) {
       {children}
       
       {/* Global Settings Button - Positioned absolutely so it shows up on every route next to theme toggle */}
-      <button 
+      <button
+        ref={openButtonRef}
         className="a11y-toggle-btn"
         onClick={() => setIsOpen(true)}
         title="Accessibility Settings"
+        aria-label="Open accessibility settings"
+        aria-haspopup="dialog"
         style={{ fontSize: '1.2rem', padding: 0 }}
       >
         ⚙️
@@ -148,10 +192,17 @@ export function AccessibilityProvider({ children }) {
       {/* Settings Panel */}
       {isOpen && (
         <div className="a11y-modal-backdrop" onClick={() => setIsOpen(false)}>
-          <div className="a11y-panel" onClick={e => e.stopPropagation()}>
+          <div
+            className="a11y-panel"
+            onClick={e => e.stopPropagation()}
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="a11y-panel-title"
+          >
             <div className="a11y-header">
-              <h2>⚙️ {t('settings_title')}</h2>
-              <button onClick={() => setIsOpen(false)}>✕</button>
+              <h2 id="a11y-panel-title">⚙️ {t('settings_title')}</h2>
+              <button onClick={() => setIsOpen(false)} aria-label="Close accessibility settings">✕</button>
             </div>
             
             <div className="a11y-scroll-content">
