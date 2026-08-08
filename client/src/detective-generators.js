@@ -1068,4 +1068,101 @@ function generateLimitLabyrinth() {
 }
 CASE_GENERATORS['case-enhanced-15'] = generateLimitLabyrinth;
 
+// ── case-enhanced-16 — The Coded Ledger Mystery (Linear Equations, age 13+, path mode) ─
+// Path-mode case: stages are solved in sequence along a circle map. Each solved
+// equation reveals a CLUE about the culprit's identity (letter / characteristic).
+// The player then picks whom the clue eliminates ("no one" is a valid, always
+// accepted answer). Cumulative eliminations still narrow to suspects − 1.
+//
+// Clue design invariants (checked by detective.test.jsx):
+//   - The culprit (Vikram Nair) is never eliminated by any clue.
+//   - Stage 1 letter ('A' or 'I') appears in ALL three names → eliminates no one.
+//   - Stage 2 letter 'V' appears in Vikram Nair and Ravi Das but not Anita Rao.
+//   - Stage 3 right-handed eliminates Ravi Das only (Vikram + Anita are right-handed).
+
+function generateCodedLedger() {
+  const stage1Letter = pick(['A', 'I']);
+  const pageStart = stage1Letter === 'A' ? 9 : pick([17, 26]);
+  const pageAnswer = pageStart + 1;
+  const pageSum = pageStart + (pageStart + 1);
+  const stage1DigitSum = String(pageAnswer).split('').reduce((s, d) => s + Number(d), 0);
+
+  const a2 = randomInt(2, 5);
+  const b2 = randomInt(1, 14);
+  const x2 = 22;
+  const result2 = a2 * x2 + b2;
+
+  const halfC = randomInt(1, 6);
+  const c3 = halfC * 2;
+  const x3 = 5;
+  const total3 = x3 + halfC;
+
+  return {
+    id: 'case-enhanced-16',
+    title: 'The Coded Ledger Mystery',
+    description: 'A ledger was tampered with using coded equations. Collect clues along the path and eliminate the culprit by deduction.',
+    difficulty: 2, xpReward: 80, topic: 'lineareq',
+    mode: 'path',
+    suspects: [
+      { id: 'ledger-culprit', name: 'Vikram Nair', role: 'Accountant', alibi: 'Claims he was reconciling the annual report in his office all evening.', appearance: '🧮', motive: 'The upcoming audit was about to expose his embezzlement.', characteristics: { height: 'tall', hand: 'right' } },
+      { id: 'ledger-anita', name: 'Anita Rao', role: 'Cashier', alibi: 'Says she left at 6 PM and was home with her family by 7 PM.', appearance: '🪙', motive: 'She discovered the missing money and was about to report it.', characteristics: { height: 'short', hand: 'right' } },
+      { id: 'ledger-ravi', name: 'Ravi Das', role: 'Security Guard', alibi: 'Claims he was doing his rounds on the ground floor.', appearance: '🗝️', motive: 'Was angry about his overtime pay being cut.', characteristics: { height: 'medium', hand: 'left' } },
+    ],
+    culprit: 'ledger-culprit',
+    clueChain: [
+      { type: 'letter', value: stage1Letter },
+      { type: 'letter', value: 'V' },
+      { type: 'characteristic', key: 'hand', value: 'right' },
+    ],
+    stages: [
+      {
+        narrative: `Detective, the back-entry ledger was tampered with! The first coded entry reads: "Pages ${pageStart} and ${pageStart + 1} of the secret register were torn out — their page numbers add up to ${pageSum}." The forger scrawled a key in the margin: "reduce the page to its digits, then to its letter — 1 = A." Solve it and the first clue about the culprit is yours.`,
+        question: `Two consecutive page numbers add up to ${pageSum}. What is the LARGER page number?`,
+        answer: pageAnswer,
+        hints: [
+          `Let the pages be n and n + 1. Their sum: 2n + 1 = ${pageSum}.`,
+          `n = (${pageSum} − 1) ÷ 2 = ${pageStart}. The larger page is ${pageStart} + 1 = ${pageAnswer}.`,
+        ],
+        evidence: {
+          id: 'ledger-ev-1',
+          text: `The larger page is ${pageAnswer}. Using the margin's key — ${pageAnswer} → digit-sum ${stage1DigitSum} → the letter '${stage1Letter}' — and every suspect's name, Vikram Nair, Anita Rao and Ravi Das, carries a '${stage1Letter}'. The clue fits all three, so nobody is ruled out yet.`,
+          summary: `The page number ${pageAnswer} reduces to the letter '${stage1Letter}' — a letter every suspect's name carries, so nobody is ruled out yet.`,
+          eliminates: [],
+        },
+      },
+      {
+        narrative: `The second entry is bolder, Detective — the forger wrote their own initial as an equation. The margin reads: "the answer is my initial-value — A = 1, B = 2, ... Z = 26." Solve ${a2}x + ${b2} = ${result2} and the number you get is the culprit's code.`,
+        question: `${a2}x + ${b2} = ${result2}. Solve for x.`,
+        answer: x2,
+        hints: [
+          `Subtract ${b2} from both sides: ${a2}x = ${result2 - b2}.`,
+          `Divide by ${a2}: x = ${result2 - b2} ÷ ${a2} = 22.`,
+        ],
+        evidence: {
+          id: 'ledger-ev-2',
+          text: `Solving gave x = 22, and the margin's code reads 22 = 'V'. Vikram Nair and Ravi Das both have a 'V' in their names — but Anita Rao's name has no 'V', so the cashier couldn't have done it.`,
+          summary: `x = 22 decodes to the letter 'V'. Vikram Nair and Ravi Das both have a 'V' — Anita Rao doesn't, so the cashier is cleared.`,
+          eliminates: ['ledger-anita'],
+        },
+      },
+      {
+        narrative: `The final cipher sits at the end of the path, Detective. The margin holds a trait key: "1 = short, 2 = medium, 3 = tall, 4 = left-handed, 5 = right-handed." The forger encoded their own body in the equation: double the number, add ${c3}, then halve the result — you get ${total3}. Unravel it and the culprit's identity is yours.`,
+        question: `(2x + ${c3}) ÷ 2 = ${total3}. Solve for x.`,
+        answer: x3,
+        hints: [
+          `Multiply both sides by 2: 2x + ${c3} = ${total3 * 2}.`,
+          `Subtract ${c3}: 2x = ${total3 * 2 - c3}. Divide by 2: x = ${(total3 * 2 - c3) / 2} = 5.`,
+        ],
+        evidence: {
+          id: 'ledger-ev-3',
+          text: `Solving gave x = 5, and the margin's key reads 5 = right-handed. Vikram Nair and Anita Rao are both right-handed — but Ravi Das is left-handed, so the guard couldn't have done it.`,
+          summary: `x = 5 decodes to "right-handed". Vikram Nair and Anita Rao are right-handed — Ravi Das isn't, so the guard is cleared.`,
+          eliminates: ['ledger-ravi'],
+        },
+      },
+    ],
+  };
+}
+CASE_GENERATORS['case-enhanced-16'] = generateCodedLedger;
+
 export { CASE_GENERATORS };

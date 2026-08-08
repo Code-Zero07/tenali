@@ -1367,6 +1367,7 @@ const ALL_DETECTIVE_STORIES = [
   { id: 'case-enhanced-13', title: 'The Derivative Detective',      description: 'A criminal used derivatives to encode their escape route.',                                                difficulty: 3, xpReward: 90, topic: 'diff',      suspects: [] },
   { id: 'case-enhanced-14', title: 'The Integration Investigation', description: 'Integration reveals the area under the criminal\'s plan.',                                               difficulty: 3, xpReward: 90, topic: 'integ',     suspects: [] },
   { id: 'case-enhanced-15', title: 'The Limit Labyrinth',           description: 'A limit describes the value the suspect approached as they escaped.',                                       difficulty: 3, xpReward: 85, topic: 'limits',    suspects: [] },
+  { id: 'case-enhanced-16', title: 'The Coded Ledger Mystery',      description: 'A ledger was tampered with using coded equations. Collect clues along the path and eliminate the culprit by deduction.', difficulty: 2, xpReward: 80, topic: 'lineareq', suspects: [], mode: 'path' },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -1571,6 +1572,115 @@ function getEliminationReasons(evidence, suspect, allSuspects) {
   return picked.sort(() => Math.random() - 0.5);
 }
 
+// ── Clue helpers (path cases) ────────────────────────────────────────────
+// A "clue" is a plain object such as:
+//   { type: 'letter', value: 'V' }                       — "name contains the letter V"
+//   { type: 'characteristic', key: 'hand', value: 'right' } — "culprit is right-handed"
+// The culprit is never eliminated. Clue semantics are designed so each clue
+// eliminates 0 or more innocent suspects but never the culprit.
+
+/** Human-readable sentence for a clue (used as the evidence text in notebooks). */
+function formatClueText(clue) {
+  if (!clue) return '';
+  if (clue.type === 'letter') return `The culprit's name contains the letter '${clue.value}'.`;
+  if (clue.type === 'characteristic') {
+    if (clue.key === 'hand') return `The culprit is ${clue.value === 'right' ? 'right' : 'left'}-handed.`;
+    if (clue.key === 'height') return `The culprit is ${clue.value}.`;
+    return `The culprit is ${clue.value}.`;
+  }
+  return '';
+}
+
+/**
+ * Does a clue eliminate a given suspect? A letter clue eliminates suspects whose
+ * name does NOT contain the letter; a characteristic clue eliminates suspects
+ * whose characteristic does not match the clue's value.
+ */
+function clueEliminatesSuspect(clue, suspect) {
+  if (!clue || !suspect) return false;
+  if (clue.type === 'letter') {
+    const letter = String(clue.value || '').toLowerCase();
+    if (!letter) return false;
+    const name = String(suspect.name || '').toLowerCase();
+    return !name.includes(letter);
+  }
+  if (clue.type === 'characteristic') {
+    const chars = suspect.characteristics || {};
+    return String(chars[clue.key] || '').toLowerCase() !== String(clue.value || '').toLowerCase();
+  }
+  return false;
+}
+
+/** Suspects eliminated by a clue (suspects for whom clueEliminatesSuspect is true). */
+function getClueEliminableSuspects(clue, suspects) {
+  return (suspects || []).filter((s) => clueEliminatesSuspect(clue, s));
+}
+
+/**
+ * Build up to 3 "who does this eliminate?" reason options for a selected suspect
+ * given a clue. When the clue eliminates the suspect, exactly one option is the
+ * correct reason (correct: true); otherwise all options are distractors.
+ */
+function getClueEliminationReasons(clue, suspect, allSuspects) {
+  if (!clue || !suspect) return [];
+  const chars = suspect.characteristics || {};
+  const canEliminate = clueEliminatesSuspect(clue, suspect);
+
+  const correctPool = [];
+  if (canEliminate) {
+    if (clue.type === 'letter') {
+      correctPool.push({
+        label: "Name doesn't match",
+        detail: `The culprit's name contains the letter '${clue.value}', but ${suspect.name}'s name doesn't contain it.`,
+      });
+    } else if (clue.type === 'characteristic' && clue.key === 'hand') {
+      correctPool.push({
+        label: 'Wrong handedness',
+        detail: `The culprit is ${clue.value === 'right' ? 'right' : 'left'}-handed, but ${suspect.name} is ${chars.hand === 'right' ? 'right' : 'left'}-handed.`,
+      });
+    } else if (clue.type === 'characteristic' && clue.key === 'height') {
+      correctPool.push({
+        label: 'Wrong height',
+        detail: `The culprit is ${clue.value}, but ${suspect.name} is ${chars.height}.`,
+      });
+    }
+  }
+  if (correctPool.length === 0) {
+    correctPool.push({
+      label: 'Evidence rules them out',
+      detail: `The evidence indicates this suspect could not have committed the crime.`,
+    });
+  }
+
+  // Build wrong distractor reasons from OTHER suspects' profiles
+  const otherSuspects = (allSuspects || []).filter((s) => s.id !== suspect.id);
+  const wrongPool = [];
+  for (const other of otherSuspects) {
+    const oc = other.characteristics || {};
+    if (clue.type === 'letter') {
+      wrongPool.push({ label: 'Letter matches their name', detail: `The letter '${clue.value}' appears in ${other.name}'s name, so the clue doesn't rule ${other.name} out.` });
+    } else {
+      if (oc.height) wrongPool.push({ label: 'Height fits', detail: `${other.name} is ${oc.height}, consistent with the clue.` });
+      if (oc.hand) wrongPool.push({ label: 'Handedness fits', detail: `${other.name} is ${oc.hand === 'right' ? 'right' : 'left'}-handed, consistent with the clue.` });
+    }
+    if (other.role && !other.role.toLowerCase().includes('none')) {
+      wrongPool.push({ label: 'Has relevant experience', detail: `As ${other.role.toLowerCase()}, ${other.name} could have carried this out.` });
+    }
+  }
+  // Fallback wrong reasons
+  if (wrongPool.length < 2) {
+    wrongPool.push({ label: 'Could have been there', detail: 'This suspect had the opportunity to commit the crime.' });
+    wrongPool.push({ label: 'Motive exists', detail: 'This suspect had a clear reason to commit the crime.' });
+  }
+
+  const picked = canEliminate ? [{ ...correctPool[0], correct: true }] : [];
+  const shuffled = wrongPool.sort(() => Math.random() - 0.5);
+  picked.push({ ...shuffled[0], correct: false });
+  picked.push({ ...shuffled[1], correct: false });
+  if (!canEliminate && shuffled[2]) picked.push({ ...shuffled[2], correct: false });
+  return picked.sort(() => Math.random() - 0.5);
+}
+
 /**
  * Validate an enhanced story schema.
  * Returns { valid: boolean, errors: string[] }.
@@ -1609,9 +1719,12 @@ function validateEnhancedStory(story) {
       if (stage.evidence) {
         if (!stage.evidence.id) errors.push(`Stage ${i} evidence missing id`);
         if (!stage.evidence.text) errors.push(`Stage ${i} evidence missing text`);
-        if (!stage.evidence.eliminates || !Array.isArray(stage.evidence.eliminates) || stage.evidence.eliminates.length === 0) {
+        // Path-mode cases may include an "ambiguous" clue that eliminates nobody;
+        // the cumulative-elimination invariant below still guarantees the culprit
+        // is the only suspect left standing.
+        if (story.mode !== 'path' && (!stage.evidence.eliminates || !Array.isArray(stage.evidence.eliminates) || stage.evidence.eliminates.length === 0)) {
           errors.push(`Stage ${i} evidence must eliminate at least one suspect`);
-        } else {
+        } else if (Array.isArray(stage.evidence.eliminates)) {
           totalEliminated += stage.evidence.eliminates.length;
         }
       }
@@ -1638,5 +1751,9 @@ export {
   highlightEvidenceSentences,
   escapeRegex,
   validateEnhancedStory,
+  formatClueText,
+  clueEliminatesSuspect,
+  getClueEliminableSuspects,
+  getClueEliminationReasons,
 
 };

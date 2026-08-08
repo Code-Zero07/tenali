@@ -1,0 +1,1092 @@
+/**
+ * DETECTIVE BOARD — "Chalk & Case File" visual identity
+ *
+ * One self-contained dossier pulled open on the app's dark desk. All rules
+ * are scoped under .dbc-root with a .dbc- prefix and their own palette +
+ * fonts, so the board case renders identically in both app themes and
+ * cannot collide with shell styles.
+ *
+ * Palette tokens:
+ *   slate  #2E3A37  chalkboard backdrop of the crime scene
+ *   chalk  #F3EEDC  chalk text, grid lines, detective marker, board labels
+ *   tag    #F2B705  evidence-yellow: affordances, tags, D-pad, primary buttons
+ *   paper  #E8D8AE  manilla dossier: notebook & suspect poster surfaces
+ *   stamp  #C64B34  ELIMINATED stamp, wrong-answer feedback, Mr. B note seal
+ *   ink    #2A2E33  dark text on manilla surfaces
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Special+Elite&family=Nunito:wght@500;700;800;900&display=swap');
+
+.dbc-root {
+  --dbc-slate: #2E3A37;
+  --dbc-slate-deep: #232d2b;
+  --dbc-chalk: #F3EEDC;
+  --dbc-chalk-dim: rgba(243, 238, 220, 0.55);
+  --dbc-tag: #F2B705;
+  --dbc-tag-deep: #d9a403;
+  --dbc-paper: #E8D8AE;
+  --dbc-paper-deep: #d9c491;
+  --dbc-stamp: #C64B34;
+  --dbc-ink: #2A2E33;
+  --dbc-ink-soft: rgba(42, 46, 51, 0.85);
+  --dbc-mint: #4caf50;
+
+  font-family: 'Nunito', 'DM Sans', sans-serif;
+  color: var(--dbc-chalk);
+  --dbc-font-chalk: 'Caveat', cursive;
+  --dbc-font-file: 'Special Elite', 'Courier New', monospace;
+  overflow-x: hidden;
+}
+
+/* ─── Shell / dossier ─────────────────────────────────────────────── */
+
+.dbc-scene {
+  width: 100%;
+  max-width: min(720px, 100%);
+  margin: 0 auto;
+  padding: 0.75rem 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.dbc-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.dbc-case-tab {
+  font-family: var(--dbc-font-file);
+  font-size: 0.72rem;
+  letter-spacing: 2px;
+  color: var(--dbc-chalk-dim);
+  text-transform: uppercase;
+  padding: 0.35rem 0.8rem;
+  border: 1px dashed rgba(243, 238, 220, 0.35);
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.dbc-case-title {
+  font-family: var(--dbc-font-chalk);
+  font-size: 1.65rem;
+  font-weight: 600;
+  line-height: 1.05;
+  margin: 0;
+  color: var(--dbc-chalk);
+  flex: 1;
+  min-width: 0;
+}
+
+.dbc-topbar-toggles {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.dbc-toggle-btn {
+  font-family: var(--dbc-font-file);
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dbc-chalk);
+  background: transparent;
+  border: 1.5px solid rgba(243, 238, 220, 0.4);
+  border-radius: 10px;
+  padding: 0.5rem 0.7rem;
+  min-height: 44px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.dbc-toggle-btn:hover,
+.dbc-toggle-btn:focus-visible {
+  background: rgba(243, 238, 220, 0.12);
+  border-color: var(--dbc-tag);
+  outline: none;
+}
+.dbc-toggle-btn.is-active {
+  background: var(--dbc-tag);
+  border-color: var(--dbc-tag);
+  color: #3a2e05;
+}
+
+.dbc-exit-btn {
+  font-family: var(--dbc-font-file);
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--dbc-chalk);
+  background: transparent;
+  border: 1.5px solid rgba(243, 238, 220, 0.4);
+  border-radius: 10px;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.dbc-exit-btn:hover,
+.dbc-exit-btn:focus-visible {
+  background: rgba(243, 238, 220, 0.12);
+  border-color: var(--dbc-tag);
+  outline: none;
+}
+
+/* ─── The chalkboard ──────────────────────────────────────────────── */
+
+.dbc-board-wrap {
+  background: radial-gradient(circle at 30% 20%, #3a4844, var(--dbc-slate) 65%, var(--dbc-slate-deep));
+  border: 1px solid rgba(243, 238, 220, 0.22);
+  border-radius: 14px;
+  padding: 0.6rem;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45), inset 0 0 60px rgba(0, 0, 0, 0.35);
+  position: relative;
+}
+
+.dbc-board {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 2px;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dbc-tile {
+  position: relative;
+  border-radius: 3px;
+  background: rgba(243, 238, 220, 0.055);
+  box-shadow: inset 0 0 0 1px rgba(243, 238, 220, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(0.95rem, 4.6vw, 1.45rem);
+  line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.dbc-tile--blocked {
+  background:
+    radial-gradient(circle at 40% 40%, rgba(20, 40, 35, 0.55), transparent 60%),
+    linear-gradient(135deg, rgba(84, 130, 105, 0.28), rgba(50, 82, 66, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(243, 238, 220, 0.12);
+  cursor: not-allowed;
+}
+.dbc-tile--blocked::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(243, 238, 220, 0.14) 1px, transparent 1.2px),
+    radial-gradient(rgba(243, 238, 220, 0.08) 1px, transparent 1.2px);
+  background-size: 9px 9px, 9px 9px;
+  background-position: 0 0, 4px 4px;
+  opacity: 0.7;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.dbc-tile--object {
+  cursor: pointer;
+  animation: dbc-chalk-pulse 2.4s ease-in-out infinite;
+}
+.dbc-tile--object:hover {
+  background: rgba(242, 183, 5, 0.16);
+}
+
+.dbc-tile--collected {
+  background: rgba(242, 183, 5, 0.12);
+  animation: none;
+}
+.dbc-tile--collected .dbc-object-emoji {
+  opacity: 0.45;
+}
+
+.dbc-object-emoji {
+  transition: transform 0.2s;
+}
+.dbc-tile--object:hover .dbc-object-emoji {
+  transform: scale(1.12);
+}
+
+/* Detective marker + pulsing chalk ring on the current cell */
+.dbc-tile--player {
+  background: rgba(243, 238, 220, 0.1);
+  animation: dbc-chalk-ring 1.5s ease-in-out infinite;
+}
+.dbc-tile--player .dbc-player-hat {
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+}
+.dbc-hop {
+  animation: dbc-hop 0.28s ease-out;
+}
+
+/* Evidence tag pinned onto a solved cell (the signature) */
+.dbc-evidence-tag {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-4deg);
+  background: var(--dbc-tag);
+  color: #3a2e05;
+  font-family: var(--dbc-font-file);
+  font-size: clamp(0.4rem, 1.7vw, 0.52rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 2px 4px;
+  max-width: 92%;
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
+  clip-path: polygon(3% 0%, 97% 0%, 100% 50%, 97% 100%, 3% 100%, 0% 50%);
+  z-index: 2;
+  pointer-events: none;
+  animation: dbc-tag-snap 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+/* ─── D-pad (touch) & desk edge ───────────────────────────────────── */
+
+.dbc-dpad {
+  display: none;
+  grid-template-columns: repeat(3, 64px);
+  grid-template-rows: repeat(2, 58px);
+  gap: 6px;
+  justify-content: center;
+  margin: 0.2rem auto 0;
+}
+.dbc-dpad-btn {
+  min-height: 52px;
+  border-radius: 12px;
+  border: none;
+  background: var(--dbc-tag);
+  color: #3a2e05;
+  font-size: 1.35rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--dbc-tag-deep), 0 8px 16px rgba(0, 0, 0, 0.35);
+  transition: transform 0.08s, box-shadow 0.08s;
+  touch-action: manipulation;
+}
+.dbc-dpad-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--dbc-tag-deep), 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+.dbc-dpad-btn.dbc-dpad-up { grid-column: 2; grid-row: 1; }
+.dbc-dpad-btn.dbc-dpad-left { grid-column: 1; grid-row: 2; }
+.dbc-dpad-btn.dbc-dpad-down { grid-column: 2; grid-row: 2; }
+.dbc-dpad-btn.dbc-dpad-right { grid-column: 3; grid-row: 2; }
+
+.dbc-desk-edge {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(243, 238, 220, 0.35), transparent);
+  margin: 0.2rem 0 0.4rem;
+}
+
+/* ─── Mascot assistant bar ────────────────────────────────────────── */
+
+.dbc-mascot-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: rgba(243, 238, 220, 0.07);
+  border: 1px solid rgba(243, 238, 220, 0.18);
+  border-radius: 14px;
+  padding: 0.55rem 0.8rem;
+  min-height: 58px;
+}
+
+.dbc-mascot-emoji {
+  font-size: 2.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35));
+}
+
+.dbc-mascot-speech {
+  font-family: var(--dbc-font-chalk);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--dbc-chalk);
+}
+
+/* ─── Math index card ─────────────────────────────────────────────── */
+
+.dbc-card-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 8, 7, 0.62);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+  animation: dbc-fade-in 0.2s ease-out;
+}
+
+.dbc-index-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 12%),
+    var(--dbc-paper);
+  color: var(--dbc-ink);
+  width: 100%;
+  max-width: 380px;
+  border-radius: 6px 6px 18px 18px;
+  padding: 1.1rem 1.2rem 1.2rem;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55), 0 0 0 8px rgba(0, 0, 0, 0.18);
+  animation: dbc-card-pop 0.3s cubic-bezier(0.2, 1.5, 0.4, 1);
+  position: relative;
+}
+.dbc-index-card::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 18px;
+  right: 18px;
+  height: 10px;
+  background: var(--dbc-paper);
+  border-radius: 4px 4px 0 0;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+.dbc-index-card::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 8px;
+  right: 8px;
+  height: 8px;
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.14) 0 2px, transparent 2px 8px);
+  opacity: 0.6;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.dbc-card-label {
+  font-family: var(--dbc-font-file);
+  font-size: 0.62rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dbc-ink);
+  margin-bottom: 0.4rem;
+}
+
+.dbc-card-narrative {
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.45;
+  margin-bottom: 0.55rem;
+}
+
+.dbc-card-question {
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1.3;
+  margin-bottom: 0.8rem;
+}
+
+.dbc-card-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+.dbc-card-input {
+  flex: 1;
+  min-width: 0;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  text-align: center;
+  color: var(--dbc-ink);
+  background: #f7ecd1;
+  border: 2px solid rgba(42, 46, 51, 0.35);
+  border-radius: 10px;
+  padding: 0.6rem 0.4rem;
+  outline: none;
+}
+.dbc-card-input:focus-visible {
+  border-color: var(--dbc-stamp);
+  box-shadow: 0 0 0 3px rgba(198, 75, 52, 0.25);
+}
+
+.dbc-card-submit {
+  background: var(--dbc-tag);
+  color: #3a2e05;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 900;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s;
+  white-space: nowrap;
+}
+.dbc-card-submit:hover { background: #ffc51f; transform: translateY(-1px); }
+.dbc-card-submit:active { transform: translateY(1px); }
+
+.dbc-card-hint {
+  margin-top: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: rgba(242, 183, 5, 0.22);
+  border: 1px dashed rgba(42, 46, 51, 0.3);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--dbc-ink);
+}
+
+.dbc-card-wrong {
+  margin-top: 0.6rem;
+  font-family: var(--dbc-font-file);
+  font-size: 0.78rem;
+  color: var(--dbc-stamp);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ─── Notebook (slides from the left) ─────────────────────────────── */
+
+.dbc-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 8, 7, 0.55);
+  z-index: 60;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+.dbc-overlay-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ─── Exit confirmation dialog ──────────────────────────────────────── */
+
+.dbc-exit-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 8, 7, 0.6);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  backdrop-filter: blur(2px);
+}
+
+.dbc-exit-dialog {
+  background: var(--dbc-paper);
+  color: var(--dbc-ink);
+  border: 3px dashed rgba(42, 46, 51, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+  max-width: min(92vw, 380px);
+  width: 100%;
+  text-align: center;
+  padding: 1.4rem 1.4rem 1.2rem;
+}
+
+.dbc-exit-dialog-title {
+  font-family: var(--dbc-font-chalk);
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin: 0 0 0.3rem;
+}
+
+.dbc-exit-dialog-body {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--dbc-ink-soft);
+  margin: 0 0 1.1rem;
+}
+
+.dbc-exit-dialog-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.dbc-exit-dialog-actions .dbc-primary-btn {
+  flex: 1;
+  margin: 0;
+  font-size: 0.95rem;
+  padding: 0.6rem 0.5rem;
+}
+
+.dbc-notebook {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(88vw, 340px);
+  background: var(--dbc-paper);
+  color: var(--dbc-ink);
+  z-index: 70;
+  box-shadow: 10px 0 34px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-105%);
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0s linear 0.32s;
+}
+.dbc-notebook.is-open {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.dbc-notebook-header {
+  padding: 1rem 1.1rem 0.6rem;
+  border-bottom: 3px dashed rgba(42, 46, 51, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.dbc-notebook-title {
+  font-family: var(--dbc-font-chalk);
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex: 1;
+}
+.dbc-notebook-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--dbc-ink);
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 8px;
+}
+.dbc-notebook-close:hover { background: rgba(42, 46, 51, 0.1); }
+
+.dbc-notebook-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.9rem 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.dbc-section-label {
+  font-family: var(--dbc-font-file);
+  font-size: 0.62rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dbc-ink);
+  margin-bottom: 0.3rem;
+}
+
+.dbc-evidence-item {
+  background: #f4e9cc;
+  border: 1.5px solid rgba(42, 46, 51, 0.18);
+  border-left: 4px solid var(--dbc-tag);
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.83rem;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: grab;
+  transition: transform 0.1s, box-shadow 0.15s, opacity 0.2s;
+  animation: dbc-tag-snap 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.dbc-evidence-item:hover {
+  transform: translateX(-2px) rotate(-0.5deg);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+.dbc-evidence-item.is-selected {
+  outline: 3px solid var(--dbc-tag);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+.dbc-evidence-item.is-dragging {
+  opacity: 0.4;
+}
+.dbc-evidence-item.is-dimmed {
+  opacity: 0.45;
+}
+.dbc-evidence-cat {
+  display: inline-block;
+  font-family: var(--dbc-font-file);
+  font-size: 0.56rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(242, 183, 5, 0.35);
+  margin-bottom: 0.25rem;
+}
+
+.dbc-notebook-empty {
+  font-family: var(--dbc-font-chalk);
+  font-size: 1.2rem;
+  text-align: center;
+  color: rgba(42, 46, 51, 0.6);
+  padding: 1rem 0.4rem;
+  line-height: 1.35;
+}
+
+.dbc-thought-line {
+  font-family: 'Nunito', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--dbc-ink);
+  padding-left: 0.7rem;
+  border-left: 3px solid rgba(42, 46, 51, 0.35);
+}
+
+.dbc-thought-toggle {
+  margin-top: 0.5rem;
+  background: none;
+  border: 1.5px solid rgba(42, 46, 51, 0.4);
+  border-radius: 999px;
+  color: var(--dbc-ink);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 0.4rem 0.8rem;
+  min-height: 44px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.dbc-thought-toggle:hover,
+.dbc-thought-toggle:focus-visible {
+  background: var(--dbc-tag);
+  border-color: var(--dbc-tag);
+  outline: none;
+}
+
+/* ─── Suspect poster (slides from the right) ──────────────────────── */
+
+.dbc-poster {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(92vw, 360px);
+  background: var(--dbc-paper);
+  color: var(--dbc-ink);
+  z-index: 70;
+  box-shadow: -10px 0 34px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(105%);
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0s linear 0.32s;
+}
+.dbc-poster.is-open {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.dbc-poster-header {
+  padding: 1rem 1.1rem 0.6rem;
+  border-bottom: 3px dashed rgba(42, 46, 51, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.dbc-poster-title {
+  font-family: var(--dbc-font-chalk);
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex: 1;
+}
+.dbc-poster-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--dbc-ink);
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 8px;
+}
+.dbc-poster-close:hover { background: rgba(42, 46, 51, 0.1); }
+
+.dbc-poster-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.9rem 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.dbc-suspect-card {
+  background: #f4e9cc;
+  border: 2px solid rgba(42, 46, 51, 0.2);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem 0.65rem;
+  transition: opacity 0.25s, transform 0.25s;
+}
+.dbc-suspect-card.is-eliminated {
+  opacity: 0.6;
+  animation: dbc-stamp-shake 0.45s ease-out;
+}
+.dbc-suspect-card.is-target {
+  outline: 3px dashed var(--dbc-tag);
+  outline-offset: 2px;
+}
+.dbc-suspect-card.is-accusable {
+  border-color: var(--dbc-stamp);
+  outline: 3px solid rgba(198, 75, 52, 0.35);
+}
+
+.dbc-suspect-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.dbc-suspect-emoji {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+.dbc-suspect-name {
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+.dbc-suspect-hint {
+  font-size: 0.72rem;
+  color: rgba(42, 46, 51, 0.65);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.dbc-profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3rem;
+}
+.dbc-profile-slot {
+  background: rgba(42, 46, 51, 0.06);
+  border-radius: 6px;
+  padding: 0.25rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+.dbc-profile-slot b {
+  display: block;
+  font-size: 0.56rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: rgba(42, 46, 51, 0.55);
+  font-weight: 800;
+}
+.dbc-profile-slot .dbc-qmark {
+  color: rgba(42, 46, 51, 0.35);
+}
+
+.dbc-stamp {
+  display: inline-block;
+  font-family: var(--dbc-font-file);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--dbc-stamp);
+  border: 3px solid var(--dbc-stamp);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  transform: rotate(-8deg);
+  opacity: 0.85;
+  animation: dbc-stamp-slam 0.4s cubic-bezier(0.2, 1.4, 0.3, 1);
+  pointer-events: none;
+}
+
+.dbc-motive-line {
+  font-family: var(--dbc-font-chalk);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 0.3rem;
+  border-top: 1px dashed rgba(42, 46, 51, 0.25);
+  padding-top: 0.3rem;
+}
+
+.dbc-accuse-row {
+  padding: 0.7rem 1rem 1rem;
+  border-top: 1px dashed rgba(42, 46, 51, 0.25);
+  text-align: center;
+}
+.dbc-accuse-btn {
+  width: 100%;
+  min-height: 52px;
+  font-family: var(--dbc-font-file);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #fff;
+  background: var(--dbc-stamp);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #9e3a28, 0 8px 18px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s, box-shadow 0.1s;
+  animation: dbc-stamp-shake 0.6s ease-out 3;
+}
+.dbc-accuse-btn:hover { transform: translateY(-1px); }
+.dbc-accuse-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #9e3a28; }
+
+/* ─── Toast ───────────────────────────────────────────────────────── */
+
+.dbc-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.4rem;
+  transform: translateX(-50%);
+  background: var(--dbc-paper);
+  color: var(--dbc-ink);
+  font-family: var(--dbc-font-chalk);
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 0.55rem 1.2rem;
+  border-radius: 999px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  z-index: 80;
+  animation: dbc-toast-pop 2.6s ease-in-out forwards;
+  max-width: min(88vw, 420px);
+  text-align: center;
+}
+
+/* ─── Intro & confession scenes ───────────────────────────────────── */
+
+.dbc-paper-scene {
+  background: var(--dbc-paper);
+  color: var(--dbc-ink);
+  border-radius: 8px;
+  max-width: min(560px, 94vw);
+  margin: 0 auto;
+  padding: 1.3rem 1.3rem 1.4rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  animation: dbc-fade-in 0.3s ease-out;
+}
+
+.dbc-paper-scene-title {
+  font-family: var(--dbc-font-chalk);
+  font-size: 2.1rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 0.5rem;
+  line-height: 1.1;
+  color: var(--dbc-ink);
+}
+
+.dbc-paper-scene-body {
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.55;
+  margin-bottom: 1rem;
+}
+
+.dbc-suspect-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+.dbc-suspect-chip {
+  background: #f4e9cc;
+  border: 1.5px solid rgba(42, 46, 51, 0.2);
+  border-radius: 10px;
+  padding: 0.45rem 0.7rem;
+  text-align: center;
+  min-width: 84px;
+}
+.dbc-suspect-chip .dbc-suspect-emoji { font-size: 1.5rem; }
+.dbc-suspect-chip .dbc-suspect-name { font-size: 0.8rem; }
+.dbc-suspect-chip .dbc-suspect-hint { font-size: 0.62rem; }
+
+.dbc-primary-btn {
+  display: block;
+  margin: 0 auto;
+  min-height: 50px;
+  padding: 0.7rem 2rem;
+  background: var(--dbc-tag);
+  border: none;
+  border-radius: 12px;
+  color: #3a2e05;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--dbc-tag-deep);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.dbc-primary-btn:hover { transform: translateY(-1px); }
+.dbc-primary-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--dbc-tag-deep); }
+.dbc-primary-btn--back {
+  background: transparent;
+  border: 1.5px solid var(--dbc-chalk-dim);
+  color: var(--dbc-chalk);
+  box-shadow: none;
+}
+.dbc-primary-btn--ghost-dark {
+  background: transparent;
+  border: 1.5px solid rgba(42, 46, 51, 0.5);
+  color: var(--dbc-ink);
+  box-shadow: none;
+}
+
+.dbc-note-seal {
+  font-family: var(--dbc-font-file);
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--dbc-stamp);
+  display: inline-block;
+  padding: 0.25rem 0.8rem;
+  border-radius: 6px;
+  transform: rotate(-6deg);
+  margin-bottom: 0.6rem;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dbc-mrB-note {
+  font-family: var(--dbc-font-file);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--dbc-ink);
+  background: #f4e9cc;
+  border: 1.5px solid rgba(42, 46, 51, 0.25);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  white-space: pre-line;
+  margin: 0.6rem 0 1rem;
+}
+
+.dbc-confession-culprit {
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+}
+
+/* ─── Keyboard hint (desktop) ─────────────────────────────────────── */
+
+.dbc-keyhint {
+  display: none;
+  font-family: var(--dbc-font-file);
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dbc-chalk-dim);
+  text-align: center;
+  margin-top: 0.2rem;
+}
+
+/* D-pad shows on touch/coarse pointers; keyboard hint on fine pointers */
+@media (pointer: coarse) {
+  .dbc-dpad { display: grid; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .dbc-keyhint { display: block; }
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────── */
+
+@keyframes dbc-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dbc-card-pop {
+  from { transform: scale(0.85) translateY(14px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes dbc-hop {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes dbc-chalk-ring {
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(242, 183, 5, 0.85); }
+  50% { box-shadow: inset 0 0 0 4px rgba(242, 183, 5, 0.35); }
+}
+
+@keyframes dbc-chalk-pulse {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(243, 238, 220, 0.1); }
+  50% { box-shadow: inset 0 0 0 2px rgba(242, 183, 5, 0.5); }
+}
+
+@keyframes dbc-tag-snap {
+  0% { transform: translate(-50%, -50%) rotate(-4deg) scale(2.4); opacity: 0; }
+  60% { transform: translate(-50%, -50%) rotate(-4deg) scale(0.92); opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(-4deg) scale(1); }
+}
+
+@keyframes dbc-stamp-slam {
+  0% { transform: rotate(-14deg) scale(1.7); opacity: 0; }
+  55% { transform: rotate(-6deg) scale(0.95); opacity: 0.95; }
+  100% { transform: rotate(-8deg) scale(1); }
+}
+
+@keyframes dbc-stamp-shake {
+  0%, 100% { transform: translateX(0) rotate(-8deg); }
+  25% { transform: translateX(-3px) rotate(-9deg); }
+  75% { transform: translateX(3px) rotate(-7deg); }
+}
+
+@keyframes dbc-toast-pop {
+  0% { opacity: 0; transform: translate(-50%, 12px); }
+  12% { opacity: 1; transform: translate(-50%, 0); }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -6px); }
+}
+
+/* ─── Reduced motion: everything collapses to simple fades ────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .dbc-tile--object,
+  .dbc-tile--player {
+    animation: none;
+  }
+  .dbc-hop,
+  .dbc-evidence-tag,
+  .dbc-index-card,
+  .dbc-stamp,
+  .dbc-toast,
+  .dbc-suspect-card.is-eliminated,
+  .dbc-accuse-btn {
+    animation: none !important;
+  }
+  .dbc-notebook,
+  .dbc-poster,
+  .dbc-overlay-backdrop {
+    transition: none !important;
+  }
+  .dbc-evidence-tag,
+  .dbc-stamp,
+  .dbc-index-card {
+    animation: dbc-fade-in 0.2s ease-out !important;
+  }
+}
+
+/* ─── Small phones ────────────────────────────────────────────────── */
+
+@media (max-width: 400px) {
+  .dbc-case-title { font-size: 1.35rem; }
+  .dbc-dpad { grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(2, 52px); }
+  .dbc-index-card { padding: 1rem 0.95rem 1.05rem; }
+  .dbc-card-question { font-size: 1.15rem; }
+}
