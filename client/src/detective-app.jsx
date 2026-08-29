@@ -1435,7 +1435,7 @@ function DetectiveParticles() {
 
   return (
     <div className="mda-particles-container" aria-hidden="true">
-      {particles.map(p => (
+      {/* {particles.map(p => (
         <span
           key={p.id}
           className="mda-particle"
@@ -1448,7 +1448,7 @@ function DetectiveParticles() {
         >
           {p.emoji}
         </span>
-      ))}
+      ))} */}
     </div>
   );
 }
@@ -3348,9 +3348,14 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
       setActiveCaseId(unfinishedCase[0]);
       setScreen('case');
       const saved = unfinishedCase[1];
-      // Resume from saved snapshot if present; otherwise generate dynamic content
+      // Resume from saved snapshot if present; otherwise generate dynamic content.
+      // Board specs are static in-code content — always resume with the current
+      // spec (so the latest notebook content renders) while keeping progress.
       if (saved && saved.savedCase) {
-        setGeneratedCase(saved.savedCase);
+        const freshBoardCase = saved.savedCase.type === 'board'
+          ? ALL_CASES.find(c => c.id === unfinishedCase[0])
+          : null;
+        setGeneratedCase(freshBoardCase || saved.savedCase);
         setEnhancedPhase('playing');
       } else if (CASE_GENERATORS[unfinishedCase[0]]) {
         setGeneratedCase(CASE_GENERATORS[unfinishedCase[0]]());
@@ -3372,7 +3377,12 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
     const existing = (progress.cases || {})[caseId];
     let caseData;
     if (existing && existing.status === 'in_progress' && existing.savedCase) {
-      caseData = existing.savedCase;
+      // Board specs are static in-code content — resume with the current spec
+      // (latest notebook content) while keeping progress from the snapshot.
+      const freshBoardCase = existing.savedCase.type === 'board'
+        ? ALL_CASES.find(c => c.id === caseId)
+        : null;
+      caseData = freshBoardCase || existing.savedCase;
       setGeneratedCase(caseData);
     } else if (CASE_GENERATORS[caseId]) {
       caseData = CASE_GENERATORS[caseId]();
@@ -3569,6 +3579,10 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
       const boardResumeState = (caseProgress && caseProgress.status === 'in_progress' && caseProgress.boardSnapshot)
         ? { phase: caseProgress.phase, boardSnapshot: caseProgress.boardSnapshot }
         : null;
+      const masteryBand = progress.boardMastery?.[caseData.skillFamily] ?? 0;
+      const boardInitialState = boardResumeState
+        ? { ...boardResumeState, initialBand: masteryBand }
+        : { initialBand: masteryBand };
       return (
         <>
           <AchievementNotification achievements={newAchievements} onDismiss={dismissAchievementNotif} />
@@ -3576,7 +3590,7 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
             story={caseData}
             onComplete={handleEnhancedComplete}
             onBack={handleEnhancedBack}
-            initialState={boardResumeState}
+            initialState={boardInitialState}
           />
         </>
       );

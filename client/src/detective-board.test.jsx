@@ -6,7 +6,7 @@
  * plus a mount smoke test for the BoardCasePlay shell.
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 
@@ -28,6 +28,7 @@ import {
   remainingSuspects,
   onlyCulpritRemains,
   accusedSuspect,
+  shouldShowDeduction,
   getRevealedProfile,
   getNotebookLines,
   getLatestThought,
@@ -37,7 +38,7 @@ import {
   validateBoardSpec,
   profileUnlocks,
 } from './detective-board-engine';
-import { BOARD_CASES, BOARD_CASE_1, getBoardCase, validateBoardCase } from './detective-board-cases';
+import { BOARD_CASES, BOARD_CASE_1, BOARD_CASE_2, BOARD_CASE_3, getBoardCase, validateBoardCase } from './detective-board-cases';
 import BoardCasePlay from './detective-board-app';
 
 // ─── Helper: Simulate localStorage (for the BoardCasePlay smoke test) ──
@@ -348,34 +349,45 @@ describe('Board engine — notebook & suspect board', () => {
     expect(getNotebookLines(BOARD_CASE_1, [])).toEqual([]);
     const lines = getNotebookLines(BOARD_CASE_1, ['ev-footprints']);
     expect(lines.length).toBe(1);
-    expect(lines[0]).toContain('Mila');
+    expect(lines[0].kind).toBe('prompt');
+    expect(lines[0].afterEvidenceIds).toContain('ev-footprints');
+    expect(lines[0].question).toContain('footprint');
   });
 
-  test('the combined aha thought appears once all three elimination clues are found', () => {
-    const lines = getNotebookLines(BOARD_CASE_1, ['ev-footprints', 'ev-clock', 'ev-muddy']);
-    expect(lines.some(l => l.includes('Riya'))).toBe(true);
+  test('the combined aha thought appears only once all suspects are eliminated', () => {
+    const evidence = ['ev-footprints', 'ev-clock', 'ev-muddy'];
+    expect(getNotebookLines(BOARD_CASE_1, evidence).some(l => l.kind === 'aha')).toBe(false);
+    expect(getNotebookLines(BOARD_CASE_1, evidence, ['mila', 'leo']).some(l => l.kind === 'aha')).toBe(false);
+    const lines = getNotebookLines(BOARD_CASE_1, evidence, ['mila', 'leo', 'teddy']);
+    expect(lines.find(l => l.kind === 'aha').text).toContain('Riya');
   });
 
   test('getLatestThought returns nothing before any clue and only the newest thought after', () => {
     expect(getLatestThought(BOARD_CASE_1, [])).toEqual([]);
     const two = getLatestThought(BOARD_CASE_1, ['ev-footprints', 'ev-clock']);
     expect(two).toHaveLength(1);
-    expect(two[0]).toContain('Leo');
-    const all = getLatestThought(BOARD_CASE_1, ['ev-footprints', 'ev-clock', 'ev-muddy']);
+    expect(two[0].kind).toBe('prompt');
+    expect(two[0].afterEvidenceIds).toContain('ev-clock');
+    const all = getLatestThought(BOARD_CASE_1, ['ev-footprints', 'ev-clock', 'ev-muddy'], ['mila', 'leo', 'teddy']);
     expect(all).toHaveLength(1);
-    expect(all[0]).toContain('Riya');
+    expect(all[0].kind).toBe('aha');
+    expect(all[0].text).toContain('Riya');
   });
 
   test('getThoughtsForEvidence returns only the thought unlocked by that clue', () => {
     const ft = getThoughtsForEvidence(BOARD_CASE_1, ['ev-footprints'], 'ev-footprints');
     expect(ft).toHaveLength(1);
-    expect(ft[0]).toContain('Mila');
+    expect(ft[0].kind).toBe('prompt');
+    expect(ft[0].afterEvidenceIds).toContain('ev-footprints');
     expect(getThoughtsForEvidence(BOARD_CASE_1, ['ev-footprints'], 'ev-clock')).toEqual([]);
   });
 
-  test('getThoughtsForEvidence surfaces the combined aha thought once all its clues are found', () => {
-    const lines = getThoughtsForEvidence(BOARD_CASE_1, ['ev-footprints', 'ev-clock', 'ev-muddy'], 'ev-muddy');
-    expect(lines.some(l => l.includes('Riya'))).toBe(true);
+  test('getThoughtsForEvidence surfaces the combined aha thought once all its clues and suspects are eliminated', () => {
+    const evidence = ['ev-footprints', 'ev-clock', 'ev-muddy'];
+    const lines = getThoughtsForEvidence(BOARD_CASE_1, evidence, 'ev-muddy', ['mila', 'leo', 'teddy']);
+    expect(lines.some(l => l.kind === 'aha')).toBe(true);
+    expect(lines.find(l => l.kind === 'aha').text).toContain('Riya');
+    expect(getThoughtsForEvidence(BOARD_CASE_1, evidence, 'ev-muddy').some(l => l.kind === 'aha')).toBe(false);
   });
 
   test('collected evidence returns in spec object order', () => {
@@ -585,6 +597,94 @@ describe('Board case integration', () => {
     return { container, root, onComplete, onBack, clickText };
   };
 
+  // ─── Deduction prompts + elimination feedback (UI level) ───────────
+
+  const renderWithSnapshot = (boardSnapshot) => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const onComplete = vi.fn();
+    const onBack = vi.fn();
+    let root;
+    act(() => {
+      root = createRoot(container);
+      root.render(
+        <BoardCasePlay story={BOARD_CASE_1} onComplete={onComplete} onBack={onBack} initialState={{ phase: 'exploring', boardSnapshot }} />
+      );
+    });
+    const clickText = (text) => {
+      const btn = [...container.querySelectorAll('button')].find(b => (b.textContent || '').toLowerCase().includes(text.toLowerCase()));
+      expect(btn).toBeTruthy();
+      act(() => { btn.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    };
+    const isPosterOpen = () => container.querySelector('.dbc-poster').classList.contains('is-open');
+    return { container, root, onComplete, onBack, clickText, isPosterOpen };
+  };
+
+  const baseSnapshot = (overrides = {}) => ({
+    playerPos: [2, 3],
+    collectedEvidenceIds: ['ev-footprints'],
+    eliminatedIds: [],
+    band: 0,
+    hintsUsedPerObject: {},
+    correctCount: 0,
+    wrongCount: 0,
+    totalHintsUsed: 0,
+    ...overrides,
+  });
+
+  test('a correct prompt elimination opens the suspect poster while the notebook stays open', () => {
+    const { container, root, clickText, isPosterOpen } = renderWithSnapshot(baseSnapshot());
+    clickText('📝');
+    expect(container.querySelector('.dbc-prompt-row')).toBeTruthy();
+    clickText('mila');
+    expect(isPosterOpen()).toBe(true);
+    expect(container.querySelector('.dbc-notebook').classList.contains('is-open')).toBe(true);
+    act(() => { root.unmount(); });
+    document.body.removeChild(container);
+  });
+
+  test('a non-final prompt elimination auto-closes the poster back to the notebook', () => {
+    vi.useFakeTimers();
+    const { container, root, clickText, isPosterOpen } = renderWithSnapshot(baseSnapshot());
+    clickText('📝');
+    clickText('mila');
+    expect(isPosterOpen()).toBe(true);
+    act(() => { vi.advanceTimersByTime(1150); });
+    expect(isPosterOpen()).toBe(false);
+    expect(container.querySelector('.dbc-notebook').classList.contains('is-open')).toBe(true);
+    act(() => { root.unmount(); });
+    vi.useRealTimers();
+    document.body.removeChild(container);
+  });
+
+  test('the final prompt elimination keeps the poster open with the Accuse button', () => {
+    const { container, root, clickText, isPosterOpen } = renderWithSnapshot(baseSnapshot({
+      collectedEvidenceIds: ['ev-footprints', 'ev-clock', 'ev-muddy'],
+      eliminatedIds: ['mila', 'leo'],
+      correctCount: 3,
+    }));
+    clickText('📝');
+    clickText('teddy');
+    expect(isPosterOpen()).toBe(true);
+    expect(container.textContent).toContain('Accuse Riya!');
+    act(() => { root.unmount(); });
+    document.body.removeChild(container);
+  });
+
+  test('an answered prompt card is faded and every comparison row is disabled', () => {
+    const { container, root, clickText } = renderWithSnapshot(baseSnapshot());
+    clickText('📝');
+    clickText('mila');
+    const card = container.querySelector('.dbc-prompt-card');
+    expect(card.classList.contains('is-done')).toBe(true);
+    const rows = [...card.querySelectorAll('.dbc-prompt-row')];
+    expect(rows).toHaveLength(4);
+    expect(rows.every(r => r.disabled)).toBe(true);
+    expect(card.querySelector('.dbc-prompt-row.is-answered .dbc-prompt-row-check')).toBeTruthy();
+    act(() => { root.unmount(); });
+    document.body.removeChild(container);
+  });
+
   test('BoardCasePlay shows a leave button while exploring', () => {
     const { container, root } = renderExploring();
     expect(container.querySelector('.dbc-exit-btn')).toBeTruthy();
@@ -618,6 +718,468 @@ describe('Board case integration', () => {
     clickText('Keep playing');
     expect(onBack).not.toHaveBeenCalled();
     expect(container.textContent).not.toContain('Leave the case?');
+    act(() => { root.unmount(); });
+    document.body.removeChild(container);
+  });
+
+  // ─── Notebook "new clue" cue (dot + pulse) ─────────────────────────
+
+  const KEYMAP = { '0,-1': 'w', '0,1': 's', '-1,0': 'a', '1,0': 'd' };
+  const pressKey = (key) => act(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key }));
+  });
+  const walkDetective = (from, to) => {
+    const moves = bfsPath(BOARD_CASE_1, from, to);
+    let pos = from;
+    for (const [dx, dy] of moves) {
+      pressKey(KEYMAP[`${dx},${dy}`]);
+      pos = [pos[0] + dx, pos[1] + dy];
+    }
+    return pos;
+  };
+  const setInput = (input, value) => {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    act(() => {
+      setter.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  };
+  const notebookBtn = (container) =>
+    [...container.querySelectorAll('button')].find(b => (b.textContent || '').includes('📝'));
+  const solveFootprints = (container) => {
+    const input = container.querySelector('.dbc-card-input');
+    expect(input).toBeTruthy();
+    setInput(input, '15');
+    act(() => {
+      container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+  };
+  const mountBoard = (snapshot) => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const onComplete = vi.fn();
+    const onBack = vi.fn();
+    let root;
+    act(() => {
+      root = createRoot(container);
+      root.render(
+        <BoardCasePlay story={BOARD_CASE_1} onComplete={onComplete} onBack={onBack}
+          initialState={{ phase: 'exploring', boardSnapshot: snapshot }} />
+      );
+    });
+    return { container, root };
+  };
+
+  test('a fresh case shows no notebook cue until a clue is solved', () => {
+    vi.useFakeTimers();
+    const { container, root } = mountBoard(baseSnapshot({ playerPos: [6, 6], collectedEvidenceIds: [] }));
+    const btn = notebookBtn(container);
+    expect(btn.querySelector('.dbc-toggle-dot')).toBeNull();
+    expect(btn.getAttribute('aria-label')).not.toContain('new clues');
+    expect(walkDetective([6, 6], [2, 3])).toEqual([2, 3]);
+    solveFootprints(container);
+    expect(notebookBtn(container).querySelector('.dbc-toggle-dot')).toBeTruthy();
+    expect(notebookBtn(container).getAttribute('aria-label')).toContain('new clues');
+    expect(notebookBtn(container).querySelector('.dbc-toggle-inner--nudge')).toBeTruthy();
+    act(() => { root.unmount(); });
+    vi.useRealTimers();
+    document.body.removeChild(container);
+  });
+
+  test('opening the notebook clears the cue', () => {
+    vi.useFakeTimers();
+    const { container, root } = mountBoard(baseSnapshot({ playerPos: [6, 6], collectedEvidenceIds: [] }));
+    walkDetective([6, 6], [2, 3]);
+    solveFootprints(container);
+    expect(notebookBtn(container).querySelector('.dbc-toggle-dot')).toBeTruthy();
+    act(() => { notebookBtn(container).dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    expect(notebookBtn(container).querySelector('.dbc-toggle-dot')).toBeNull();
+    expect(notebookBtn(container).getAttribute('aria-label')).not.toContain('new clues');
+    expect(container.querySelector('.dbc-notebook').classList.contains('is-open')).toBe(true);
+    act(() => { root.unmount(); });
+    vi.useRealTimers();
+    document.body.removeChild(container);
+  });
+
+  test('a resumed case with collected evidence shows no phantom cue', () => {
+    const { container, root } = mountBoard(baseSnapshot({ playerPos: [2, 3], collectedEvidenceIds: ['ev-footprints'] }));
+    expect(notebookBtn(container).querySelector('.dbc-toggle-dot')).toBeNull();
+    expect(notebookBtn(container).getAttribute('aria-label')).not.toContain('new clues');
+    act(() => { root.unmount(); });
+    document.body.removeChild(container);
+  });
+});
+
+// ═══ Case 2 — The Missing School Trophy ════════════════════════════════
+
+describe('Board Case 2 schema validation', () => {
+  test('validateBoardCase(board-2) passes with zero problems', () => {
+    expect(validateBoardCase(BOARD_CASE_2)).toEqual([]);
+  });
+
+  test('every investigation object has E/M/H variants whose answers all equal the evidence value', () => {
+    for (const obj of BOARD_CASE_2.objects) {
+      if (obj.clueType !== 'investigation') continue;
+      const m = obj.investigation.math;
+      expect(m.easy).toBeDefined();
+      expect(m.medium).toBeDefined();
+      expect(m.hard).toBeDefined();
+      const answers = [m.easy.answer, m.medium.answer, m.hard.answer];
+      expect(new Set(answers.map(String)).size).toBe(1);
+      expect(typeof m.easy.answer).toBe('number');
+    }
+  });
+
+  test('every investigation variant with visuals has a valid type', () => {
+    const validTypes = ['count-visual', 'clock', 'measure'];
+    for (const obj of BOARD_CASE_2.objects) {
+      if (obj.clueType !== 'investigation') continue;
+      for (const key of ['easy', 'medium', 'hard']) {
+        const v = obj.investigation.math[key];
+        if (v.visuals) {
+          expect(validTypes).toContain(v.visuals.type);
+        }
+      }
+    }
+  });
+
+  test('culprit is never in any elimination rule', () => {
+    const allEliminated = BOARD_CASE_2.eliminationRules.flatMap(r => r.eliminates);
+    expect(allEliminated).not.toContain(BOARD_CASE_2.culprit);
+  });
+
+  test('every suspect has at least one unlockable profile slot', () => {
+    const unlockMap = {};
+    for (const obj of BOARD_CASE_2.objects) {
+      for (const u of profileUnlocks(obj)) {
+        if (!unlockMap[u.suspectId]) unlockMap[u.suspectId] = new Set();
+        unlockMap[u.suspectId].add(u.field);
+      }
+    }
+    for (const s of BOARD_CASE_2.suspects) {
+      expect(unlockMap[s.id]).toBeDefined();
+      expect(unlockMap[s.id].size).toBeGreaterThan(0);
+    }
+  });
+
+  test('Case 2 uses addsub skill family for mastery continuity', () => {
+    expect(BOARD_CASE_2.skillFamily).toBe('addsub');
+  });
+
+  test('Case 2 has exactly 4 suspects and 7 objects', () => {
+    expect(BOARD_CASE_2.suspects).toHaveLength(4);
+    expect(BOARD_CASE_2.objects).toHaveLength(7);
+  });
+
+  test('Case 2 has 5 elimination rules', () => {
+    expect(BOARD_CASE_2.eliminationRules).toHaveLength(5);
+  });
+
+  test('all Case 2 objects are reachable from player start', () => {
+    for (const obj of BOARD_CASE_2.objects) {
+      const s = createInitialState(BOARD_CASE_2);
+      const { state } = walkTo(s, BOARD_CASE_2, obj.cell);
+      expect(state.playerPos).toEqual(obj.cell);
+    }
+  });
+});
+
+describe('Case 2 visual math renderers (UI)', () => {
+  const KEYMAP = { '0,-1': 'w', '0,1': 's', '-1,0': 'a', '1,0': 'd' };
+  const pressKey = (key) => act(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key }));
+  });
+  const walkDetectiveTo = (from, targetObjId) => {
+    const targetObj = BOARD_CASE_2.objects.find(o => o.id === targetObjId);
+    const avoidCells = new Set(
+      BOARD_CASE_2.objects
+        .filter(o => o.id !== targetObjId)
+        .map(o => `${o.cell[0]},${o.cell[1]}`)
+    );
+    const augmented = {
+      ...BOARD_CASE_2,
+      blocked: [...BOARD_CASE_2.blocked, ...[...avoidCells].map(s => s.split(',').map(Number))],
+    };
+    const moves = bfsPath(augmented, from, targetObj.cell);
+    let pos = from;
+    for (const [dx, dy] of moves) {
+      pressKey(KEYMAP[`${dx},${dy}`]);
+      pos = [pos[0] + dx, pos[1] + dy];
+    }
+    return pos;
+  };
+  const case2Snapshot = (overrides = {}) => ({
+    playerPos: [6, 6],
+    collectedEvidenceIds: [],
+    eliminatedIds: [],
+    band: 0,
+    hintsUsedPerObject: {},
+    correctCount: 0,
+    wrongCount: 0,
+    totalHintsUsed: 0,
+    ...overrides,
+  });
+  const mountBoard2 = (snapshot) => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const onComplete = vi.fn();
+    const onBack = vi.fn();
+    let root;
+    act(() => {
+      root = createRoot(container);
+      root.render(
+        <BoardCasePlay story={BOARD_CASE_2} onComplete={onComplete} onBack={onBack}
+          initialState={{ phase: 'exploring', boardSnapshot: snapshot || case2Snapshot() }} />
+      );
+    });
+    return { container, root };
+  };
+
+  test('count-visual renders emoji groups in the math card', () => {
+    vi.useFakeTimers();
+    const { container, root } = mountBoard2();
+    walkDetectiveTo([6, 6], 'backpack');
+    const visual = container.querySelector('.dbc-visual--count');
+    expect(visual).toBeTruthy();
+    expect(visual.querySelectorAll('.dbc-visual-item').length).toBe(5);
+    act(() => { root.unmount(); });
+    vi.useRealTimers();
+    document.body.removeChild(container);
+  });
+
+  test('clock visual renders a clock face SVG', () => {
+    vi.useFakeTimers();
+    const { container, root } = mountBoard2();
+    walkDetectiveTo([6, 6], 'clock');
+    const visual = container.querySelector('.dbc-visual--clock');
+    expect(visual).toBeTruthy();
+    expect(visual.querySelector('.dbc-clock-face')).toBeTruthy();
+    expect(visual.querySelectorAll('.dbc-clock-hand').length).toBeGreaterThanOrEqual(1);
+    act(() => { root.unmount(); });
+    vi.useRealTimers();
+    document.body.removeChild(container);
+  });
+
+  test('measure visual renders a ruler', () => {
+    vi.useFakeTimers();
+    const { container, root } = mountBoard2();
+    walkDetectiveTo([6, 6], 'rope');
+    const visual = container.querySelector('.dbc-visual--measure');
+    expect(visual).toBeTruthy();
+    expect(visual.querySelector('.dbc-ruler')).toBeTruthy();
+    act(() => { root.unmount(); });
+    vi.useRealTimers();
+    document.body.removeChild(container);
+  });
+});
+
+// ─── Case 3: The Mystery Behind Mr. B ───────────────────────────────────
+
+describe('BOARD_CASE_3 schema validation', () => {
+  test('has no validation errors', () => {
+    const errors = validateBoardCase(BOARD_CASE_3);
+    expect(errors).toEqual([]);
+  });
+
+  test('has 4 suspects', () => {
+    expect(BOARD_CASE_3.suspects).toHaveLength(4);
+  });
+
+  test('culprit is null (no student culprit)', () => {
+    expect(BOARD_CASE_3.culprit).toBeNull();
+  });
+
+  test('has 7 objects', () => {
+    expect(BOARD_CASE_3.objects).toHaveLength(7);
+  });
+
+  test('has 3 elimination rules', () => {
+    expect(BOARD_CASE_3.eliminationRules).toHaveLength(3);
+  });
+
+  test('has deduction field with interactive structure', () => {
+    expect(BOARD_CASE_3.deduction).toBeDefined();
+    expect(BOARD_CASE_3.deduction.npc.id).toBe('mr-b');
+    expect(BOARD_CASE_3.deduction.opening).toHaveLength(2);
+    expect(BOARD_CASE_3.deduction.cards).toHaveLength(5);
+    expect(BOARD_CASE_3.deduction.connections).toHaveLength(3);
+    expect(BOARD_CASE_3.deduction.connections[0].portraitRevealStage).toBe(1);
+    expect(BOARD_CASE_3.deduction.connections[0].hint).toBeTruthy();
+    expect(BOARD_CASE_3.deduction.connections[2].portraitRevealStage).toBe(3);
+    expect(BOARD_CASE_3.deduction.blueButton.prompt).toBeTruthy();
+    expect(BOARD_CASE_3.deduction.blueButton.caseSummaries).toHaveLength(3);
+    expect(BOARD_CASE_3.deduction.portraitInteraction.pointer).toBe(true);
+    expect(BOARD_CASE_3.deduction.blueButton.caseCards).toEqual(['listening', 'heard', 'music']);
+  });
+
+  test('all 4 suspects are referenced in elimination rules or not eliminated', () => {
+    const eliminated = new Set();
+    BOARD_CASE_3.eliminationRules.forEach(r => r.eliminates.forEach(id => eliminated.add(id)));
+    expect(eliminated.size).toBe(3);
+    expect(eliminated.has('cleo')).toBe(false);
+  });
+
+  test('has currentThoughts with note, prompt, and aha kinds', () => {
+    const kinds = new Set(BOARD_CASE_3.currentThoughts.map(t => t.kind));
+    expect(kinds.has('note')).toBe(true);
+    expect(kinds.has('prompt')).toBe(true);
+    expect(kinds.has('aha')).toBe(true);
+  });
+
+  test('has confession with mrBNote', () => {
+    expect(BOARD_CASE_3.confession.mrBNote).toBeTruthy();
+    expect(BOARD_CASE_3.confession.culpritNarrative).toBeTruthy();
+  });
+});
+
+describe('shouldShowDeduction', () => {
+  test('returns false when spec has no deduction field', () => {
+    const state = createInitialState(BOARD_CASE_1);
+    expect(shouldShowDeduction(BOARD_CASE_1, state)).toBe(false);
+  });
+
+  test('returns false when no suspects eliminated', () => {
+    const state = createInitialState(BOARD_CASE_3);
+    expect(shouldShowDeduction(BOARD_CASE_3, state)).toBe(false);
+  });
+
+  test('returns true when all eliminable suspects are eliminated (Cleo remains)', () => {
+    const state = createInitialState(BOARD_CASE_3);
+    state.eliminatedIds = ['pip', 'bruno', 'digby'];
+    expect(shouldShowDeduction(BOARD_CASE_3, state)).toBe(true);
+  });
+
+  test('returns false when only some eliminable suspects eliminated', () => {
+    const state = createInitialState(BOARD_CASE_3);
+    state.eliminatedIds = ['pip', 'bruno'];
+    expect(shouldShowDeduction(BOARD_CASE_3, state)).toBe(false);
+  });
+
+  test('returns false for Case 2 even with all students eliminated', () => {
+    const state = createInitialState(BOARD_CASE_2);
+    state.eliminatedIds = ['nora', 'ethan', 'mira', 'suki'];
+    expect(shouldShowDeduction(BOARD_CASE_2, state)).toBe(false);
+  });
+});
+
+// ─── Confession → Note → Reward flow (UI) ────────────────────────────
+
+describe('Board confession flow (Confession → Note → Reward)', () => {
+  const originalMatchMedia = window.matchMedia;
+
+  const renderConfession = (story) => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const onComplete = vi.fn();
+    const onBack = vi.fn();
+    let root;
+    act(() => {
+      root = createRoot(container);
+      root.render(
+        <BoardCasePlay
+          story={story}
+          onComplete={onComplete}
+          onBack={onBack}
+          initialState={{ phase: 'confession', boardSnapshot: {} }}
+        />
+      );
+    });
+    const clickText = (text) => {
+      const btn = [...container.querySelectorAll('button')].find(b => (b.textContent || '').toLowerCase().includes(text.toLowerCase()));
+      expect(btn).toBeTruthy();
+      act(() => { btn.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    };
+    return { container, root, onComplete, onBack, clickText };
+  };
+
+  beforeEach(() => {
+    window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+  });
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+  });
+
+  test('all three cases carry the short-confession flow fields', () => {
+    for (const c of [BOARD_CASE_1, BOARD_CASE_2, BOARD_CASE_3]) {
+      expect(c.confession.confessionLines.length).toBeGreaterThanOrEqual(2);
+      expect(c.confession.confessionLines[0]).toBeTruthy();
+      expect(typeof c.confession.teacherLine).toBe('string');
+      expect(typeof c.confession.rewardSubtitle).toBe('string');
+      expect(typeof c.confession.giveLine).toBe('string');
+      expect(c.confession.mrBNote).toBeTruthy();
+    }
+  });
+
+  test('Case 2 shows Suki confession in two short speech bubbles', () => {
+    const { container, root } = renderConfession(BOARD_CASE_2);
+    expect(container.querySelectorAll('.dbc-speech-bubble').length).toBe(2);
+    expect(container.textContent).toContain('make the trophy special');
+    expect(container.textContent).toContain('worried everyone');
+    expect(container.textContent).toContain('Suki');
+    act(() => { root.unmount(); });
+    document.body.removeChild(container);
+  });
+
+  test('Continue advances from confession to the folded-note CTA', () => {
+    const { container, root, clickText } = renderConfession(BOARD_CASE_2);
+    expect(container.querySelector('.dbc-note-cta')).toBeNull();
+    clickText('Continue');
+    expect(container.querySelector('.dbc-note-cta')).toBeTruthy();
+    expect(container.textContent).toContain('A NOTE FOR YOU');
+    expect(container.textContent).toContain('OPEN');
+    act(() => { root.unmount(); });
+    document.body.removeChild(container);
+  });
+
+  test('opening the note reveals Mr. B message then the reward step', () => {
+    const { container, root, clickText } = renderConfession(BOARD_CASE_2);
+    clickText('Continue');
+    clickText('OPEN');
+    expect(container.querySelector('.dbc-mrB-note--open')).toBeTruthy();
+    expect(container.textContent).toContain('some clues are meant to be heard');
+    expect(container.querySelector('.dbc-teacher-bubble')).toBeTruthy();
+    expect(container.textContent).toContain('The trophy is safe');
+    clickText('Continue');
+    expect(container.textContent).toContain('CASE SOLVED');
+    expect(container.textContent).toContain('The Golden Acorn is safe');
+    expect(container.textContent).toContain('+60 XP');
+    act(() => { root.unmount(); });
+    document.body.removeChild(container);
+  });
+
+  test('final Continue invokes onBack from the reward step', () => {
+    const { root, onBack, clickText } = renderConfession(BOARD_CASE_2);
+    clickText('Continue');
+    clickText('OPEN');
+    clickText('Continue');
+    clickText('Continue');
+    expect(onBack).toHaveBeenCalledTimes(1);
+    act(() => { root.unmount(); });
+  });
+
+  test('reward stars follow hint usage', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const onComplete = vi.fn();
+    const onBack = vi.fn();
+    let root;
+    act(() => {
+      root = createRoot(container);
+      root.render(
+        <BoardCasePlay story={BOARD_CASE_1} onComplete={onComplete} onBack={onBack}
+          initialState={{ phase: 'confession', boardSnapshot: {} }} />
+      );
+    });
+    const clickText = (t) => {
+      const btn = [...container.querySelectorAll('button')].find(b => (b.textContent || '').toLowerCase().includes(t.toLowerCase()));
+      act(() => { btn.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    };
+    clickText('Continue');
+    clickText('OPEN');
+    clickText('Continue');
+    expect(container.textContent).toContain('CASE SOLVED');
+    expect(container.textContent).toContain('⭐'.repeat(3));
+    expect(container.textContent).toContain('+60 XP');
     act(() => { root.unmount(); });
     document.body.removeChild(container);
   });

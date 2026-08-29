@@ -1,7 +1,6 @@
 # Notebook Deduction Prompts — Design
 
 **Date:** 2026-08-09
-**Status:** Approved for implementation planning
 **Scope:** Rework the **Current Thoughts** section of the detective notebook for board cases (Case 1, "The Vanished Birthday Cupcakes") so it *helps the child think like a detective, not think for them*: short questions + visual suspect comparisons + the child's own decision, with escalating owl hints on incorrect choices.
 
 ---

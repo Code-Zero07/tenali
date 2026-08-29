@@ -1,7 +1,6 @@
-# Board Case Elimination Polish — Design
+ # Board Case Elimination Polish — Design
 
 **Date:** 2026-08-16
-**Status:** Approved for implementation
 **Scope:** Three UX fixes to the board-based crime-scene cases (Math Detective Agency, `type: 'board'`): (1) stop the mascot tab from overlapping the game board, (2) auto-open the suspect poster with its short elimination (stamp) animation whenever the child eliminates a suspect from the notebook, and (3) make already-answered deduction prompts visibly "resolved" and non re-answerable in a way that feels native to the case-file UI.
 
 ---

@@ -1,7 +1,6 @@
 # Board Case UX Polish — "The Vanished Birthday Cupcakes"
 
-**Date:** 2026-08-08
-**Status:** Approved for implementation
+**Date:** 2026-08-08    
 **Scope:** A focused UX/readability pass on the board-based crime-scene case ("The Vanished Birthday Cupcakes") in the Math Detective Agency. Visual + behavioral polish only — no new puzzle types, no schema changes.
 
 ---

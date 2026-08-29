@@ -1,7 +1,6 @@
 # Detective Board Cases — Design
 
 **Date:** 2026-08-08
-**Status:** Approved for implementation planning
 **Scope:** A new board-based crime-scene case type inside the Math Detective Agency, plus Case 1 ("The Vanished Birthday Cupcakes"), with a data schema that supports a 3-case interconnected arc (Cases 2–3 are future data additions).
 
 ---

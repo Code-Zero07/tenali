@@ -87,7 +87,7 @@ export function validateBoardSpec(spec) {
 
   const suspectIds = (spec.suspects || []).map(s => s.id);
   const culprit = spec.culprit;
-  if (!suspectIds.includes(culprit)) problems.push('culprit is not a suspect');
+  if (culprit !== null && culprit !== undefined && !suspectIds.includes(culprit)) problems.push('culprit is not a suspect');
 
   const evidenceIds = [];
   const objectCells = [];
@@ -170,12 +170,37 @@ export function validateBoardSpec(spec) {
     });
   });
 
-  // currentThoughts references real evidence
+  // currentThoughts references real evidence and matches the kind shapes
   const allThoughts = spec.currentThoughts || [];
   allThoughts.forEach((t, i) => {
     (t.afterEvidenceIds || []).forEach(eid => {
       if (!evidenceIds.includes(eid)) problems.push(`currentThoughts[${i}] references unknown evidence "${eid}"`);
     });
+    const kinds = ['prompt', 'note', 'aha'];
+    if (!kinds.includes(t.kind)) problems.push(`currentThoughts[${i}] has invalid kind "${t.kind}"`);
+    if (t.kind === 'note') {
+      if (!t.emoji) problems.push(`currentThoughts[${i}] note needs an emoji`);
+      if (!t.text) problems.push(`currentThoughts[${i}] note needs text`);
+    }
+    if (t.kind === 'prompt') {
+      if (!t.question) problems.push(`currentThoughts[${i}] prompt needs a question`);
+      if (!Array.isArray(t.compare) || t.compare.length < 2) {
+        problems.push(`currentThoughts[${i}] prompt needs a compare list of at least 2 suspects`);
+      } else {
+        t.compare.forEach((row, r) => {
+          if (!row || !suspectIds.includes(row.suspectId)) {
+            problems.push(`currentThoughts[${i}] compare[${r}] references unknown suspect "${row && row.suspectId}"`);
+          }
+        });
+      }
+      if (!t.hint1 || !t.hint2) problems.push(`currentThoughts[${i}] prompt needs hint1 and hint2`);
+      const hasRule = (spec.eliminationRules || []).some(r => (t.afterEvidenceIds || []).includes(r.evidenceId));
+      if (!hasRule) problems.push(`currentThoughts[${i}] prompt evidence has no elimination rule`);
+    }
+    if (t.kind === 'aha' && !t.text) problems.push(`currentThoughts[${i}] aha needs text`);
+    if (t.afterEliminated !== undefined && typeof t.afterEliminated !== 'boolean') {
+      problems.push(`currentThoughts[${i}] afterEliminated must be a boolean`);
+    }
   });
 
   return problems;
@@ -393,6 +418,15 @@ export function accusedSuspect(spec, state) {
   return remainingSuspects(spec, state)[0];
 }
 
+/** True when the spec has a deduction phase and every eliminable suspect (those referenced in eliminationRules) has been eliminated. */
+export function shouldShowDeduction(spec, state) {
+  if (!spec.deduction) return false;
+  const eliminableIds = new Set();
+  (spec.eliminationRules || []).forEach(r => r.eliminates.forEach(id => eliminableIds.add(id)));
+  if (eliminableIds.size === 0) return false;
+  return [...eliminableIds].every(id => state.eliminatedIds.includes(id));
+}
+
 /**
  * Gradual profile reveal: '???' for every slot whose unlocking clue has
  * not been collected. Builds a suspectId:field → evidenceId index from the
@@ -418,23 +452,37 @@ export function getRevealedProfile(suspect, spec, collectedEvidenceIds) {
 }
 
 /**
- * Compute Current Thoughts lines: each currentThoughts entry whose
- * afterEvidenceIds are all collected becomes active (in spec order).
+ * Whether a currentThoughts entry is active: its afterEvidenceIds are all
+ * collected, and — when the entry opts in via afterEliminated — every
+ * non-culprit suspect has been eliminated (only the culprit remains).
  */
-export function getNotebookLines(spec, collectedEvidenceIds) {
-  return (spec.currentThoughts || [])
-    .filter(t => (t.afterEvidenceIds || []).every(id => collectedEvidenceIds.includes(id)))
-    .map(t => t.lines)
-    .flat();
+function isThoughtActive(spec, t, collectedEvidenceIds, eliminatedIds) {
+  if (!(t.afterEvidenceIds || []).every(id => collectedEvidenceIds.includes(id))) return false;
+  if (t.afterEliminated) {
+    const nonCulprits = (spec.suspects || []).map(s => s.id).filter(id => id !== spec.culprit);
+    if (nonCulprits.length === 0) return false;
+    return nonCulprits.every(id => eliminatedIds.includes(id));
+  }
+  return true;
 }
 
 /**
- * The single most recent thought: the last active line (in spec order).
+ * Compute active Current Thoughts entries: each currentThoughts entry whose
+ * afterEvidenceIds are all collected becomes active (in spec order).
+ * Entries are structured objects ({ kind: 'prompt'|'note'|'aha', ... }).
+ */
+export function getNotebookLines(spec, collectedEvidenceIds, eliminatedIds = []) {
+  return (spec.currentThoughts || [])
+    .filter(t => isThoughtActive(spec, t, collectedEvidenceIds, eliminatedIds));
+}
+
+/**
+ * The single most recent thought: the last active entry (in spec order).
  * Returns [] when nothing has been collected yet. Keeps the notebook to
  * one thought at a time by default.
  */
-export function getLatestThought(spec, collectedEvidenceIds) {
-  const active = getNotebookLines(spec, collectedEvidenceIds);
+export function getLatestThought(spec, collectedEvidenceIds, eliminatedIds = []) {
+  const active = getNotebookLines(spec, collectedEvidenceIds, eliminatedIds);
   return active.length > 0 ? [active[active.length - 1]] : [];
 }
 
@@ -443,12 +491,24 @@ export function getLatestThought(spec, collectedEvidenceIds) {
  * entry whose afterEvidenceIds include the given evidence (and are all
  * collected). Returns [] when that evidence unlocks nothing active.
  */
-export function getThoughtsForEvidence(spec, collectedEvidenceIds, evidenceId) {
+export function getThoughtsForEvidence(spec, collectedEvidenceIds, evidenceId, eliminatedIds = []) {
   return (spec.currentThoughts || [])
     .filter(t => (t.afterEvidenceIds || []).includes(evidenceId)
-      && (t.afterEvidenceIds || []).every(id => collectedEvidenceIds.includes(id)))
-    .map(t => t.lines)
-    .flat();
+      && isThoughtActive(spec, t, collectedEvidenceIds, eliminatedIds));
+}
+
+/**
+ * The suspect a deduction prompt rules out, resolved from the spec's
+ * eliminationRules (single source of truth — the answer is never stored on
+ * the prompt itself). Returns the first eliminated suspect id for any of the
+ * prompt's evidence, or null when there is none.
+ */
+export function promptAnswer(spec, promptEntry) {
+  const rules = spec.eliminationRules || [];
+  const rule = promptEntry.evidenceId
+    ? rules.find(r => r.evidenceId === promptEntry.evidenceId)
+    : rules.find(r => (promptEntry.afterEvidenceIds || []).includes(r.evidenceId));
+  return rule && rule.eliminates.length > 0 ? rule.eliminates[0] : null;
 }
 
 /** Evidence items in collection order, for the notebook. */

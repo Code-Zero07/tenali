@@ -6087,7 +6087,7 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) {
   .detective-evidence-mark { animation: none; }
 }
-Curiosity Mode */
+/* ─── Curiosity Mode ─── */
 .curiosity-shell {
   width: 100%;
 }
