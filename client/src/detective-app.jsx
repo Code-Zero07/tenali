@@ -12,6 +12,8 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { ALL_DETECTIVE_STORIES } from './detective-stories'
+import BoardCasePlay from './detective-board-app'
+import { BOARD_CASES } from './detective-board-cases'
 
 // ─── Sound Effects (Web Audio API) ──────────────────────────────────────
 let audioCtx = null;
@@ -76,7 +78,7 @@ function loadDetectiveProgress() {
     const raw = localStorage.getItem(DETECTIVE_STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch { /* ignored */ }
-  return { xp: 0, casesSolved: 0, cases: {}, usedCaseIds: [], age: 8 };
+  return { xp: 0, casesSolved: 0, cases: {}, usedCaseIds: [], age: 8, boardMastery: {} };
 }
 
 /**
@@ -195,6 +197,20 @@ function filterCasesByAge(cases, age) {
 
 function saveDetectiveProgress(data) {
   try { localStorage.setItem(DETECTIVE_STORAGE_KEY, JSON.stringify(data)); } catch { /* ignored */ }
+}
+
+/** True for the board-based crime-scene case type. */
+function isBoardCase(c) {
+  return !!(c && c.type === 'board');
+}
+
+export function saveInProgressCase(caseId, snapshot) {
+  try {
+    const p = loadDetectiveProgress();
+    if (!p.cases) p.cases = {};
+    p.cases[caseId] = { ...snapshot, status: 'in_progress', updatedAt: Date.now() };
+    saveDetectiveProgress(p);
+  } catch { /* ignored */ }
 }
 
 function getDetectiveRank(xp) {
@@ -351,7 +367,7 @@ const ORIGINAL_CASES = [
 // Merge with new stories from detective-stories.js (avoid ID conflicts)
 const EXISTING_IDS = new Set(ORIGINAL_CASES.map(c => c.id));
 const NEW_STORIES = ALL_DETECTIVE_STORIES.filter(c => !EXISTING_IDS.has(c.id));
-const ALL_CASES = [...ORIGINAL_CASES, ...NEW_STORIES];
+const ALL_CASES = [...ORIGINAL_CASES, ...NEW_STORIES, ...BOARD_CASES];
 
 // ─── DetectiveCaseLibrary ───────────────────────────────────────────
 
@@ -517,8 +533,13 @@ function DetectiveCaseLibrary({ progress, cases, allComplete, onSelectCase, onBa
                     {caseItem.description}
                   </div>
                   <div style={{ fontSize: '0.65rem', color: 'var(--clr-text-soft)', marginTop: '0.2rem', fontWeight: 600 }}>
-                    📚 {topicDisplay} &middot; {caseItem.stages.length} stages
+                    📚 {topicDisplay} &middot; {isBoardCase(caseItem) ? 'Crime scene board' : `${caseItem.stages.length} stages`}
                   </div>
+                  {isBoardCase(caseItem) && (
+                    <div style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--clr-accent)', marginTop: '0.2rem', letterSpacing: '0.3px' }}>
+                      🗺️ BOARD CASE
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -529,7 +550,7 @@ function DetectiveCaseLibrary({ progress, cases, allComplete, onSelectCase, onBa
                   )}
                   {status === 'in_progress' && (
                     <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--clr-accent)', padding: '2px 10px', borderRadius: 999, background: 'var(--clr-accent-soft)' }}>
-                      Stage {caseProgress.currentStage + 1}/{caseProgress.totalStages}
+                      {isBoardCase(caseItem) ? 'In progress' : `Stage ${caseProgress.currentStage + 1}/${caseProgress.totalStages}`}
                     </div>
                   )}
                   {status === 'not_started' && (
@@ -1383,14 +1404,28 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
     // Mark case as solved
     updated.cases[caseId] = {
       status: 'solved',
-      currentStage: caseData.stages.length,
-      totalStages: caseData.stages.length,
+      currentStage: caseData.stages?.length ?? 1,
+      totalStages: caseData.stages?.length ?? 1,
       topic: caseData.topic,
       stars,
       xpEarned,
       hintLevel: totalHintsUsed,
       completedAt: Date.now(),
     };
+
+    // Board-case between-case mastery: silently nudge the skill-family band.
+    if (caseData.type === 'board' && meta.skillFamily) {
+      const total = (meta.correctCount || 0) + (meta.wrongCount || 0);
+      if (!updated.boardMastery) updated.boardMastery = {};
+      const current = updated.boardMastery[meta.skillFamily] ?? 0;
+      let next = current;
+      if (total > 0) {
+        const correctRatio = (meta.correctCount || 0) / total;
+        if (correctRatio >= 2 / 3 && totalHintsUsed <= 2) next = Math.min(2, current + 1);
+        else if ((meta.wrongCount || 0) > total / 2 || totalHintsUsed > 4) next = Math.max(0, current - 1);
+      }
+      updated.boardMastery[meta.skillFamily] = next;
+    }
     updated.xp += xpEarned;
     updated.totalStars = (updated.totalStars || 0) + stars;
     updated.casesSolved = Object.values(updated.cases).filter(c => c.status === 'solved').length;
@@ -1470,7 +1505,7 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
   const handleReset = () => {
     const msg = 'Reset all detective progress? This will clear all solved cases, XP, stars AND leaderboard data.';
     if (window.confirm(msg)) {
-      const reset = { xp: 0, casesSolved: 0, cases: {}, usedCaseIds: [] };
+      const reset = { xp: 0, casesSolved: 0, cases: {}, usedCaseIds: [], boardMastery: {} };
       saveDetectiveProgress(reset);
       // Also clear leaderboard
       try { localStorage.removeItem(LEADERBOARD_KEY); } catch { /* ignored */ }
@@ -1512,6 +1547,30 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
   if (screen === 'case' && activeCaseId) {
     const caseData = ALL_CASES.find(c => c.id === activeCaseId);
     if (!caseData) { setScreen('library'); return null; }
+
+    // Board case flow: BoardCasePlay (crime-scene board). Intercept before the
+    // stage-based DetectiveCaseView, which requires `.stages`.
+    if (caseData.type === 'board') {
+      const caseProgress = (progress.cases || {})[activeCaseId];
+      const boardResumeState = (caseProgress && caseProgress.status === 'in_progress' && caseProgress.boardSnapshot)
+        ? { phase: caseProgress.phase, boardSnapshot: caseProgress.boardSnapshot }
+        : null;
+      const masteryBand = progress.boardMastery?.[caseData.skillFamily] ?? 0;
+      const boardInitialState = boardResumeState
+        ? { ...boardResumeState, initialBand: masteryBand }
+        : { initialBand: masteryBand };
+      return (
+        <>
+          <AchievementNotification achievements={newAchievements} onDismiss={dismissAchievementNotif} />
+          <BoardCasePlay
+            story={caseData}
+            onComplete={handleCaseComplete}
+            onBack={handleBackFromCase}
+            initialState={boardInitialState}
+          />
+        </>
+      );
+    }
 
     const caseProgress = (progress.cases || {})[activeCaseId];
     const initialStage = caseProgress && caseProgress.status === 'in_progress'
