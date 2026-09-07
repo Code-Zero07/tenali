@@ -13,15 +13,16 @@ const request = require('supertest');
 // All topic keys that have a working *-api/question + *-api/check pair.
 // Add new topics here as they are created; the contract tests come for free.
 const TOPICS = [
-  'trig', 'quadratic', 'simul', 'fractionadd', 'indices', 'sequences',
-  'funceval', 'lineq', 'ratio', 'percent', 'sets', 'prob', 'stats',
-  'matrix', 'vectors', 'transform', 'mensur', 'bearings', 'log', 'diff',
+  'quadratic', 'percent', 'sets',
+  'matrix', 'mensur', 'bearings', 'log', 'diff',
   'integ', 'bases', 'stdform', 'bounds', 'sdt', 'variation', 'squaring',
   'rounding', 'binomial', 'complex', 'angles', 'triangles', 'congruence',
   'polygons', 'similarity', 'dotprod', 'permcomb', 'limits', 'invtrig',
   'remfactor', 'shares', 'banking', 'gst', 'section', 'linprog',
   'circmeasure', 'conics', 'diffeq', 'hcflcm', 'profitloss', 'decimals',
-  'addition', 'column-addition', 'multiply', 'basicarith',
+  'addition', 'multiply', 'basicarith',
+  'trig', 'simul', 'sequences', 'fractionadd', 'funceval', 'lineq',
+  'column-addition', 'indices', 'ratio', 'prob', 'stats', 'vectors', 'transform',
 ];
 
 // Build a minimal Express app that mounts either the monolith or a specific router.
@@ -45,6 +46,8 @@ describe.each(TOPICS)('%s-api contract', (topic) => {
     // answer must be present and not undefined (number or string depending on topic)
     expect(res.body.answer).toBeDefined();
     expect(String(res.body.prompt).length).toBeGreaterThan(0);
+    // Detect cp1252-re-encoded-as-UTF-8 mojibake (Ã×, Â², âˆš etc.)
+    expect(res.body.prompt).not.toMatch(/[ÃÂâ][^\x00-\x7F]/);
   });
 
   test('POST /check with server answer returns {correct: boolean}', async () => {

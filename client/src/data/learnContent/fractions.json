@@ -1,0 +1,30 @@
+{
+  "title": "Fractions: Parts of a Whole",
+  "blocks": [
+    {
+      "icon": "🍕",
+      "title": "1. What is a Fraction?",
+      "content": "A fraction shows a **part of a whole**.\n\nImagine you have a whole pizza and you cut it into equal slices. If you take a slice, you have a fraction of the pizza!\n\nWe write fractions with a number on top and a number on the bottom."
+    },
+    {
+      "icon": "🔢",
+      "title": "2. Numerator & Denominator",
+      "content": "Every fraction has two parts:\n\n• **Numerator (Top Number):** How many parts we *have* or are talking about.\n• **Denominator (Bottom Number):** How many *equal parts* make up the whole.\n\n*(Tip to remember: **D**enominator is **D**own at the bottom!)*"
+    },
+    {
+      "icon": "🎭",
+      "title": "3. Types of Fractions",
+      "content": "Fractions come in different shapes and sizes:\n\n• **Proper Fraction:** The top is smaller than the bottom (like 1/2 or 3/4). It's less than a whole.\n• **Improper Fraction:** The top is bigger than or equal to the bottom (like 5/4). It's a whole or more!\n• **Mixed Number:** A whole number plus a proper fraction (like 1 ½).\n• **Equivalent Fractions:** Fractions that look different but show the exact same amount (like 1/2 and 2/4)."
+    },
+    {
+      "icon": "🎯",
+      "title": "4. Fraction Challenge",
+      "content": "You're getting good at this!\n\nWhen comparing fractions with the **same bottom number** (denominator), just look at the top number. The bigger the top, the bigger the fraction.\n\nIf the top numbers are the same, the fraction with the **smaller bottom** is actually bigger, because the pieces are larger!"
+    },
+    {
+      "icon": "🔍",
+      "title": "5. Real-World Fractions",
+      "content": "Fractions are everywhere around us!\n\nWe use them when baking, telling time, sharing food, and measuring things.\n\nNow that you've discovered fractions in the real world, you are ready for the test!"
+    }
+  ]
+}

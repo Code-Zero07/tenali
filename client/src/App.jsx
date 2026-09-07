@@ -77,6 +77,7 @@ import './App.css'
 import TreasureHuntApp from './treasurehunt/TreasureHuntApp.jsx'
 import EnhancedMathDetectiveApp from './detective-app'
 import GlossaryText from './components/GlossaryText'
+import LearningVisual from './components/LearningVisual'
 import KeyTerms from './components/KeyTerms'
 import InteractiveLcmHcfApp from './LcmHcfApp';
 import IdliVadaSambharApp from './IdliVadaSambharApp';
@@ -99,6 +100,13 @@ import ContrastChallengeApp, { QuizLayoutExtension } from './ContrastChallengeAp
 import { VOCAB_CORPUS } from './vocabCorpus'
 import PercentExplanationApp from './PercentExplanationApp'
 import { playSound } from './audioContext'
+import { installMonstersInterceptor } from './monsters/fetchInterceptor.js';
+import MonsterToast from './monsters/MonsterToast.jsx';
+import HallPanel from './monsters/HallPanel.jsx';
+import CureFlow from './monsters/CureFlow.jsx';
+import GuidedSolver from './monsters/GuidedSolver.jsx';
+import { load as loadMonsterLog, getMonsterHealedState } from './monsters/monsterStore.js';
+import MonsterAvatar from './monsters/MonsterAvatar.jsx';
 import GeometryApp from './GeometryApp';
 import EquationSandboxApp from './lib/EquationSandboxApp.jsx';
 import QFormulaConceptApp from './lib/concept/QFormulaConceptApp.jsx';
@@ -114,6 +122,12 @@ import PlaygroundApp from './PlaygroundApp'
 import LocalCompilerApp from './LocalCompilerApp'
 import BattleApp from './BattleApp'
 import SudokuApp from './SudokuApp'
+import WaterJugLab from './WaterJugLab'
+import EquationCraftingLab from './EquationCraftingLab'
+import { getLearnContent } from './data/learnContent.js'
+import AnglesLearnPage from './components/learning/AnglesLearnPage'
+import GSTLearnPage from './components/learning/GSTLearnPage'
+import FractionsLearnPage from './components/learning/FractionsLearnPage'
 
 // API base URL from environment variables (Vite)
 export const API = import.meta.env.VITE_API_BASE_URL || '';
@@ -42407,6 +42421,95 @@ function App() {
     }
   })
 
+  // Install monsters interceptor once on mount.
+  // It wraps window.fetch to detect wrong answers and dispatch a CustomEvent
+  // for MonsterToast (and Hall, when added). Spec §5.
+  useEffect(() => {
+    try { installMonstersInterceptor() } catch (_e) { /* never break the app */ }
+  }, [])
+
+  // Misconception Monsters — Hall modal state. Spec §6.5.
+  // The monsterLog is hydrated from localStorage on mount. Toast CTA / future
+  // header icon can flip hallOpen; HallPanel reads from monsterLog snapshot.
+  const [monsterLog, setMonsterLog] = useState(() => {
+    try { return loadMonsterLog() } catch { return null }
+  })
+  const [hallOpen, setHallOpen] = useState(false)
+  const [activeCure, setActiveCure] = useState(null)
+  const [guidedSolverMonsterId, setGuidedSolverMonsterId] = useState(null)
+  const [activeInterruption, setActiveInterruption] = useState(null)
+
+  // Track monsters triggered during the active play session
+  const sessionMonstersRef = useRef(new Set())
+  const previousModeRef = useRef(null)
+
+  // Dispatch session summary when returning to menu from active quiz
+  useEffect(() => {
+    if (previousModeRef.current && !mode) {
+      if (sessionMonstersRef.current.size > 0) {
+        const monsterIds = Array.from(sessionMonstersRef.current)
+        window.dispatchEvent(new CustomEvent('tenali:sessionSummary', {
+          detail: { monsterIds }
+        }))
+      }
+    }
+    if (mode) {
+      sessionMonstersRef.current.clear()
+    }
+    previousModeRef.current = mode
+  }, [mode])
+
+  // Listen to wrong answer events for inline card interruptions and session tracking
+  useEffect(() => {
+    function handle(e) {
+      const detail = e.detail || {}
+      if (!detail.monsterId) return
+
+      // Track this trigger for the post-game summary
+      sessionMonstersRef.current.add(detail.monsterId)
+
+      const healedState = getMonsterHealedState(detail.monsterId)
+      setActiveInterruption({
+        monsterId: detail.monsterId,
+        state: healedState,
+        isIntro: detail.isNew === true
+      })
+
+      setTimeout(() => {
+        setActiveInterruption(null)
+      }, 2500)
+    }
+    window.addEventListener('tenali:wrongAnswer', handle)
+    return () => window.removeEventListener('tenali:wrongAnswer', handle)
+  }, [])
+
+  // Keep monsterLog in sync with localStorage. The fetchInterceptor's
+  // monsterStore.append() writes to localStorage; we re-hydrate when the
+  // browser fires a 'storage' event (e.g. another tab). For same-tab writes
+  // we expose a small global hook that the interceptor can call; fallback is
+  // a window event.
+  useEffect(() => {
+    function onStorage(e) {
+      if (e && e.key === 'tenali.monsterLog.v1') {
+        try { setMonsterLog(loadMonsterLog()) } catch { }
+      }
+    }
+    function onMonsterLogChanged() {
+      try { setMonsterLog(loadMonsterLog()) } catch { }
+    }
+    function onOpenHall() {
+      setHallOpen(true)
+    }
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('tenali:monsterLogChanged', onMonsterLogChanged)
+    window.addEventListener('tenali:openHall', onOpenHall)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('tenali:monsterLogChanged', onMonsterLogChanged)
+      window.removeEventListener('tenali:openHall', onOpenHall)
+    }
+  }, [])
+
   // Synchronize browser URL query parameters dynamically with the active mode state
   useEffect(() => {
     try {
@@ -43391,6 +43494,16 @@ function App() {
   // Route: /extendedeuclid → Extended Euclidean algorithm quiz
   if (pathname === '/extendedeuclid') {
     return <ExtendedEuclidApp />
+  }
+
+  // Route: /water-jug-lab → Water Jug GCD Lab
+  if (pathname === '/water-jug-lab') {
+    return <WaterJugLab onBack={() => { window.location.href = withBase('/') }} />
+  }
+
+  // Route: /equation-crafting-lab → Equation Crafting Lab
+  if (pathname === '/equation-crafting-lab') {
+    return <EquationCraftingLab onBack={() => { window.location.href = withBase('/') }} />
   }
 
   // Route: /linear → Linear Algebra flashcards (proctored quiz)
@@ -44674,7 +44787,7 @@ function App() {
     funceval: FuncEvalApp,         // Function evaluation
     lineq: LineEqApp,              // Line equation
     basicarith: BasicArithApp,     // Basic arithmetic (+, −, ×)
-    fractionadd: FractionAddApp,   // Fraction addition
+    fractionadd: FractionsPage,    // Fractions (Learn -> Test)
     surds: SurdsApp,               // Surds (simplify, add, multiply, rationalise)
     indices: IndicesApp,           // Indices (laws of exponents)
     sequences: SequencesApp,       // Sequences & Series
@@ -44726,7 +44839,7 @@ function App() {
     heron: HeronApp,               // Heron's Formula
     shares: SharesApp,             // Shares & Dividends
     banking: BankingApp,           // Banking (RD)
-    gst: GSTApp,                   // GST
+    gst: GSTPage,                  // GST (Learn -> Test)
     section: SectionApp,           // Section Formula
     linprog: LinProgApp,           // Linear Programming
     circmeasure: CircMeasureApp,   // Circular Measure
@@ -44751,6 +44864,8 @@ function App() {
     // matrixmystics mode removed — Matrix Mystics content now embedded in LinearAlgebraApp's mission quiz
     trackProgress: null,
     riddle: RiddleApp,              // Math Riddles
+    'water-jug-lab': WaterJugLab,
+    'equation-crafting-lab': EquationCraftingLab,
   }
 
   // Get the component to render (or null if mode not set)
@@ -44878,7 +44993,12 @@ function App() {
         onSelect={(key) => {
           if (key === 'goalpractice') {
             setMode('goalpractice');
+          } else if (key === 'angles') {
+            // PROTOTYPE: ONLY Angles enters the Learn/Test gateway
+            setIsGoalMode(false);
+            handleSelectMode(key);
           } else {
+            // All other topics bypass the gateway and go straight to quiz configuration
             setMode(key);
             setIsGoalMode(false);
           }
@@ -44886,6 +45006,405 @@ function App() {
       />
     );
   };
+
+  // ========== LEARN / TEST GATEWAY ==========
+  const [learningPhase, setLearningPhase] = useState(() => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'angles' ? 'select' : null;
+  } catch {
+    return null;
+  }
+})
+  const [learnData, setLearnData] = useState(null)
+  const [revealedBlocks, setRevealedBlocks] = useState(1)
+  const [blockStartTime, setBlockStartTime] = useState(Date.now())
+  const [warningMessage, setWarningMessage] = useState(null)
+
+  useEffect(() => {
+    if (mode && learningPhase === 'learn') {
+      const topicName = getModeLabel(mode)
+      setLearnData(null)
+      getLearnContent(mode, topicName).then(data => {
+        setLearnData(data)
+      })
+    }
+  }, [mode, learningPhase])
+
+
+  const getModeLabel = (key) => {
+    const labels = {
+      gk: 'General Knowledge', addition: 'Addition', quadratic: 'Quadratic Substitution',
+      multiply: 'Multiplication Tables', vocab: 'Vocabulary', spot: 'Twin Hunt',
+      sqrt: 'Square Root', polymul: 'Polynomial Multiplication', polyfactor: 'Polynomial Factoring',
+      primefactor: 'Prime Factorization', qformula: 'Quadratic Formula', simul: 'Simultaneous Equations',
+      funceval: 'Functions', lineq: 'Line Equations', basicarith: 'Arithmetic',
+      fractionadd: 'Fractions', surds: 'Surds', indices: 'Indices',
+      sequences: 'Sequences & Series', ratio: 'Ratio & Proportion', percent: 'Percentages',
+      sets: 'Sets & Venn Diagrams', trig: 'Trigonometry', ineq: 'Inequalities',
+      coordgeom: 'Coordinate Geometry', prob: 'Probability', stats: 'Statistics',
+      matrix: 'Matrices', vectors: 'Vectors', dotprod: 'Dot Products',
+      transform: 'Transformations', mensur: 'Mensuration', bearings: 'Bearings',
+      log: 'Logarithms', diff: 'Differentiation', bases: 'Number Bases',
+      circleth: 'Circle Theorems', integ: 'Integration', stdform: 'Standard Form',
+      bounds: 'Bounds', sdt: 'Speed, Distance, Time', variation: 'Variation',
+      hcflcm: 'HCF & LCM', profitloss: 'Profit & Loss', rounding: 'Rounding',
+      binomial: 'Binomial Theorem', complex: 'Complex Numbers', angles: 'Angles',
+      triangles: 'Triangles', congruence: 'Congruence', pythag: "Pythagoras' Theorem",
+      polygons: 'Polygons', similarity: 'Similarity', squaring: 'Squaring (a+b)²',
+      lineareq: 'Linear Equations', decimals: 'Decimals', permcomb: 'Permutations & Combinations',
+      limits: 'Limits', invtrig: 'Inverse Trig', remfactor: 'Remainder Theorem',
+      heron: "Heron's Formula", shares: 'Shares & Dividends', banking: 'Banking (RD)',
+      gst: 'GST', section: 'Section Formula', linprog: 'Linear Programming',
+      circmeasure: 'Circular Measure', conics: 'Conic Sections', diffeq: 'Differential Equations',
+      tatsavit: 'Math Drill', randommix: 'Random Mix', custom: 'Custom Lesson',
+      gym: 'Gym', guess: 'Guess the Number',
+      gymdecimals: 'Gym Decimals', funcgym: 'Functions Gym', dotprodgym: 'Dot Products Gym',
+      fracaddgym: 'Fractions Gym', lineqgym: 'Linear Equations Gym',
+      indicesgym: 'Indices Gym', polygym: 'Polynomials Gym',
+    }
+    return labels[key] || key
+  }
+
+  const handleSelectMode = (key) => {
+    setMode(key)
+    setLearningPhase('select')
+    setRevealedBlocks(1)
+    setBlockStartTime(Date.now())
+    setWarningMessage(null)
+  }
+
+  const handleBackToHome = () => {
+    setMode(null)
+    setLearningPhase(null)
+    setRevealedBlocks(1)
+    setBlockStartTime(Date.now())
+    setWarningMessage(null)
+  }
+
+  if (mode && learningPhase === 'select') {
+    const topicName = getModeLabel(mode)
+    return (
+      <div className="app-shell">
+        <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+        <div className="card">
+          <div style={{ maxWidth: 640, margin: '0 auto', padding: '1.5rem 1rem', color: 'var(--clr-text)' }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <button className="back-button" onClick={handleBackToHome}>← Home</button>
+            </div>
+            <div style={{ textAlign: 'center', marginBottom: 32 }}>
+              <h1 style={{ marginBottom: 8, fontSize: '2.5rem' }}>{topicName}</h1>
+              <p className="subtitle" style={{ fontSize: '1.2rem', opacity: 0.8 }}>
+                🤔 How would you like to proceed?
+              </p>
+            </div>
+            <div className="learn-test-selection">
+              <button className="learn-test-card learn-card" onClick={() => { setLearningPhase('learn'); setRevealedBlocks(1); setBlockStartTime(Date.now()); setWarningMessage(null); }}>
+                <span className="learn-test-icon">📖</span>
+                <span className="learn-test-label">Learn</span>
+                <span className="learn-test-desc">Understand the concepts through explanations and examples 💡</span>
+              </button>
+              <button className="learn-test-card test-card" onClick={() => setLearningPhase('test')}>
+                <span className="learn-test-icon">📝</span>
+                <span className="learn-test-label">Test</span>
+                <span className="learn-test-desc">Assess your understanding with a fast-paced quiz 🎯</span>
+              </button>
+            </div>
+            <p style={{ textAlign: 'center', marginTop: 24, fontSize: '1rem', opacity: 0.6, fontStyle: 'italic', fontWeight: '500' }}>
+              "Understand First. Test Later. Learn Better. 🌟"
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (mode === 'angles' && learningPhase === 'learn') {
+    return (
+      <div className="app-shell">
+        <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+        <AnglesLearnPage
+          onStartTest={() => setLearningPhase('test')}
+          onBack={handleBackToHome}
+        />
+      </div>
+    )
+  }
+
+  if (mode && learningPhase === 'learn') {
+    const topicName = getModeLabel(mode)
+
+    if (!learnData) {
+      return (
+        <div className="app-shell">
+          <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+          <div className="card">
+            <div style={{ maxWidth: 900, margin: '0 auto', padding: '3rem', textAlign: 'center', color: 'var(--clr-text)' }}>
+              <div style={{ fontSize: '1.2rem', opacity: 0.8 }}>Loading learning content...</div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="app-shell">
+        <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+        <div className="card">
+          <div style={{ maxWidth: 900, margin: '0 auto', padding: '1.5rem 1rem', color: 'var(--clr-text)' }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <button className="back-button" onClick={() => setLearningPhase('select')}>← Back</button>
+            </div>
+            <div style={{ textAlign: 'center', marginBottom: 32 }}>
+              <h1 style={mode === 'angles' ? { marginBottom: 12, fontSize: '2.5rem', color: 'var(--clr-heading, var(--clr-text))', fontWeight: '700' } : { marginBottom: 12, fontSize: '2.8rem', background: 'linear-gradient(to right, var(--clr-accent, #2ea043), #1f7f32)', WebkitBackgroundClip: 'text', color: 'transparent', display: 'inline-block', fontWeight: '800' }}>
+                {topicName}
+              </h1>
+              <p className="subtitle" style={mode === 'angles' ? { fontSize: '1.1rem', opacity: 0.8, color: 'var(--clr-text)' } : { fontSize: '1.2rem', opacity: 0.85, fontWeight: '500' }}>
+                📖 Master the concepts before you test yourself!
+              </p>
+            </div>
+            
+            <div className="learn-content-area" style={{ marginTop: 24 }}>
+              <h2 style={mode === 'angles' ? { marginBottom: 24, fontSize: '1.5rem', textAlign: 'center', color: 'var(--clr-text)', fontWeight: '600' } : { marginBottom: 32, fontSize: '1.8rem', textAlign: 'center', color: 'var(--clr-text)', fontWeight: '700' }}>
+                {learnData.title}
+              </h2>
+              
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                gap: '32px',
+                alignItems: 'center',
+                position: 'relative'
+              }}>
+                {/* Vertical connecting line for timeline effect */}
+                <div style={{
+                  position: 'absolute',
+                  top: '20px',
+                  bottom: '20px',
+                  left: '42px',
+                  width: '4px',
+                  background: 'linear-gradient(to bottom, rgba(46, 160, 67, 0.4), rgba(46, 160, 67, 0.05))',
+                  zIndex: 0,
+                  borderRadius: '4px'
+                }} className="timeline-line"></div>
+
+                {learnData.blocks?.slice(0, revealedBlocks).map((block, idx) => (
+                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', width: '100%' }}>
+                    <div style={mode === 'angles' ? {
+                      position: 'relative',
+                      zIndex: 1,
+                      backgroundColor: 'var(--clr-bg)',
+                      padding: '1.5rem 2rem',
+                      borderRadius: '16px',
+                      border: '1px solid var(--clr-border, rgba(100, 100, 100, 0.2))',
+                      lineHeight: '1.6',
+                      fontSize: '1rem',
+                      textAlign: 'left',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '16px',
+                      width: '100%',
+                    } : {
+                      position: 'relative',
+                      zIndex: 1,
+                      backgroundColor: 'var(--clr-bg)',
+                      padding: '2rem 2.5rem',
+                      borderRadius: '24px',
+                      border: '2px solid rgba(46, 160, 67, 0.15)',
+                      lineHeight: '1.75',
+                      fontSize: '1.15rem',
+                      textAlign: 'left',
+                      display: 'flex',
+                      flexDirection: 'row',
+                      gap: '32px',
+                      alignItems: 'flex-start',
+                      boxShadow: '0 8px 30px rgba(0,0,0,0.06)',
+                      transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                      width: '100%',
+                      backdropFilter: 'blur(10px)',
+                      background: 'linear-gradient(145deg, var(--clr-bg) 0%, rgba(46, 160, 67, 0.05) 100%)'
+                    }}
+                    onMouseOver={(e) => {
+                      if (mode === 'angles') return;
+                      e.currentTarget.style.transform = 'translateY(-6px) scale(1.02)';
+                      e.currentTarget.style.boxShadow = '0 20px 40px rgba(46, 160, 67, 0.15)';
+                      e.currentTarget.style.border = '2px solid var(--clr-accent, #2ea043)';
+                      const icon = e.currentTarget.querySelector('.block-icon-container');
+                      if(icon) icon.style.transform = 'rotate(8deg) scale(1.1)';
+                    }}
+                    onMouseOut={(e) => {
+                      if (mode === 'angles') return;
+                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                      e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.06)';
+                      e.currentTarget.style.border = '2px solid rgba(46, 160, 67, 0.15)';
+                      const icon = e.currentTarget.querySelector('.block-icon-container');
+                      if(icon) icon.style.transform = 'rotate(-4deg) scale(1)';
+                    }}
+                    >
+                      {mode !== 'angles' && (
+                        <div className="block-icon-container" style={{
+                          fontSize: '3.5rem',
+                          lineHeight: '1',
+                          padding: '20px',
+                          backgroundColor: 'var(--clr-card)',
+                          borderRadius: '24px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: 'inset 0 -4px 12px rgba(0,0,0,0.05), 0 8px 16px rgba(46, 160, 67, 0.15)',
+                          border: '2px solid rgba(46, 160, 67, 0.25)',
+                          minWidth: '90px',
+                          minHeight: '90px',
+                          transform: 'rotate(-4deg)',
+                          transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                        }}>
+                          {block.icon}
+                        </div>
+                      )}
+                      <div style={mode === 'angles' ? { width: '100%' } : { flex: 1, width: '100%', paddingTop: '8px' }}>
+                        <h3 style={mode === 'angles' ? { margin: '0 0 12px 0', fontSize: '1.25rem', color: 'var(--clr-heading, var(--clr-text))', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' } : { margin: '0 0 16px 0', fontSize: '1.5rem', color: 'var(--clr-accent, #2ea043)', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {mode === 'angles' && <span style={{fontSize: '1.25rem'}}>{block.icon}</span>}
+                          {block.title}
+                        </h3>
+                        
+                        {block.visual && (
+  <LearningVisual visual={block.visual} />
+)}
+
+                        {/* Safe: HTML rendered via dangerouslySetInnerHTML originates from trusted local learnContent JSON, not user input. */}
+                        <div 
+                          style={mode === 'angles' ? { whiteSpace: 'pre-wrap', opacity: 0.9, fontSize: '1rem', letterSpacing: '0', lineHeight: '1.75' } : { whiteSpace: 'pre-wrap', opacity: 0.95, fontSize: '1.1rem', letterSpacing: '0.2px' }} 
+                          dangerouslySetInnerHTML={{ __html: (() => {
+                            let html = block.content
+                              .replace(/\*\*(.*?)\*\*/g, mode === 'angles' ? '<strong>$1</strong>' : '<strong style="color: var(--clr-accent, #2ea043); font-weight: 800;">$1</strong>');
+                            if (mode === 'angles') {
+                              // Strip bullet markers and present as clean paragraphs
+                              html = html.replace(/•\s*/g, '');
+                            } else {
+                              html = html.replace(/•/g, '<span style="display: inline-block; transform: scale(1.2); margin-right: 8px;">👉</span>');
+                            }
+                            return html;
+                          })() }} 
+                        />
+                      </div>
+                    </div>
+                    {idx === revealedBlocks - 1 && revealedBlocks < learnData.blocks.length && (
+                      <button 
+                        onClick={() => {
+                          const elapsed = Date.now() - blockStartTime;
+                          const minTime = mode === 'angles' ? 40000 : 60000;
+                          if (elapsed < minTime) {
+                            setWarningMessage(mode === 'angles'
+                              ? 'Please take your time to understand this concept. Read for at least 40 seconds before proceeding.'
+                              : 'Please take your time to understand this concept. Read for at least 1 minute before proceeding.');
+                          } else {
+                            setRevealedBlocks(prev => prev + 1);
+                            setBlockStartTime(Date.now());
+                            setWarningMessage(null);
+                          }
+                        }}
+                        style={{
+                          padding: '12px 24px', borderRadius: '20px', fontSize: '1.1rem',
+                          background: 'transparent', color: 'var(--clr-text)', border: '2px solid var(--clr-accent, #2ea043)',
+                          cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s',
+                          zIndex: 2, backgroundColor: 'var(--clr-bg)'
+                        }}
+                        onMouseOver={e => {
+                          e.currentTarget.style.background = 'var(--clr-accent, #2ea043)';
+                          e.currentTarget.style.color = '#fff';
+                        }}
+                        onMouseOut={e => {
+                          e.currentTarget.style.background = 'var(--clr-bg)';
+                          e.currentTarget.style.color = 'var(--clr-text)';
+                        }}
+                      >
+                        Got it, next step ↓
+                      </button>
+                    )}
+                    {/* Start Test button — appears inside the last block after all blocks are revealed */}
+                    {idx === revealedBlocks - 1 && revealedBlocks === learnData.blocks.length && (
+                      <button 
+                        onClick={() => {
+                          const elapsed = Date.now() - blockStartTime;
+                          const minTime = mode === 'angles' ? 40000 : 60000;
+                          if (elapsed < minTime) {
+                            setWarningMessage(mode === 'angles'
+                              ? 'Please review this section carefully. Read for at least 40 seconds before proceeding to the test.'
+                              : 'Please review the common pitfalls carefully. Read for at least 1 minute before proceeding to the test.');
+                          } else {
+                            setLearningPhase('test');
+                          }
+                        }}
+                        style={{
+                          padding: '16px 36px', borderRadius: 30, fontSize: '1.25rem',
+                          background: 'linear-gradient(135deg, #2ea043, #1f7f32)', color: 'white', border: 'none', cursor: 'pointer',
+                          fontWeight: '800', boxShadow: '0 8px 24px rgba(46, 160, 67, 0.3)',
+                          transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                          display: 'inline-flex', alignItems: 'center', gap: '12px',
+                          zIndex: 2, marginTop: '8px'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
+                          e.currentTarget.style.boxShadow = '0 12px 30px rgba(46, 160, 67, 0.5)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                          e.currentTarget.style.boxShadow = '0 8px 24px rgba(46, 160, 67, 0.3)';
+                        }}
+                      >
+                        <span>🎯</span> Start Test <span>🚀</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {warningMessage && (
+              <div style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
+              }}>
+                <div style={{
+                  background: 'var(--clr-surface, #1c1c1f)',
+                  border: '1px solid var(--clr-accent, #2ea043)',
+                  borderRadius: '16px', padding: '32px', maxWidth: '400px',
+                  textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                  color: 'var(--clr-text)'
+                }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⏱️</div>
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '12px', color: 'var(--clr-accent, #2ea043)' }}>Hold on!</h3>
+                  <p style={{ fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '24px', opacity: 0.9 }}>
+                    {warningMessage}
+                  </p>
+                  <button 
+                    onClick={() => setWarningMessage(null)}
+                    style={{
+                      padding: '10px 24px', borderRadius: '8px', fontSize: '1rem',
+                      background: 'var(--clr-accent, #2ea043)', color: '#fff', border: 'none',
+                      cursor: 'pointer', fontWeight: 'bold'
+                    }}
+                  >
+                    Okay, I'll keep reading
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Start Test button is now integrated into the last learning block above */}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="app-shell">
@@ -44898,6 +45417,49 @@ function App() {
       <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
         {theme === 'dark' ? '☀️' : '🌙'}
       </button>
+      <style>{`
+        .monster-interruption-popup {
+          position: fixed;
+          bottom: 24px;
+          left: 24px;
+          z-index: 1000000;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          pointer-events: none;
+          animation: inline-slide-wobble 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .monster-interruption-bubble {
+          background: var(--clr-card, #2c2622);
+          color: var(--clr-text, #ede8e3);
+          border: 1.5px solid var(--clr-border, rgba(255,245,230,0.18));
+          border-radius: 12px;
+          padding: 8px 12px;
+          font-size: 12px;
+          font-weight: 700;
+          margin-top: 6px;
+          box-shadow: var(--shadow-card);
+          white-space: nowrap;
+        }
+        @keyframes inline-slide-wobble {
+          0% { transform: translateY(60px) scale(0.5); opacity: 0; }
+          70% { transform: translateY(-5px) scale(1.05); opacity: 0.9; }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+      `}</style>
+
+      {activeInterruption && (
+        <div className="monster-interruption-popup">
+          <MonsterAvatar monsterId={activeInterruption.monsterId} size={90} state={activeInterruption.state} />
+          <div className="monster-interruption-bubble">
+            {activeInterruption.isIntro
+              ? 'A new monster has breached!'
+              : activeInterruption.state === 'warning'
+                ? '⚠️ Grrr... I am stirring!'
+                : 'Struck again!'}
+          </div>
+        </div>
+      )}
       <div>
         {mode === 'vachana' ? (
           <Vachana onBack={() => setMode(null)} initialAdaptScore={diagnosticState[mode] || 0} />
@@ -44908,6 +45470,49 @@ function App() {
         )}
       </div>
       {renderCelebrationModal()}
+      {/* Misconception Monsters — toast overlay (portals to body) + Hall modal. Spec §6. */}
+      <MonsterToast
+        onOpenHall={() => setHallOpen(true)}
+        onTap={() => setHallOpen(true)}
+      />
+      <HallPanel
+        open={hallOpen}
+        onClose={() => {
+          setHallOpen(false)
+          setGuidedSolverMonsterId(null)
+        }}
+        monsterLog={monsterLog}
+        initialSelectedId={guidedSolverMonsterId}
+        initialGuidedSolver={!!guidedSolverMonsterId}
+        onStartCure={(monsterId, topic) => {
+          setHallOpen(false)
+          setGuidedSolverMonsterId(null)
+          setActiveCure({ monsterId, topic })
+        }}
+        onOpenGuidedSolver={(monsterId) => {
+          setGuidedSolverMonsterId(monsterId)
+        }}
+        onCloseSolver={() => {
+          // Clear the flag so the next Hall open (from toast, header, etc.)
+          // lands on the grid instead of reopening the same solver.
+          setGuidedSolverMonsterId(null)
+        }}
+      />
+      {activeCure && <CureFlow
+        monsterId={activeCure.monsterId}
+        topic={activeCure.topic}
+        onCancel={() => setActiveCure(null)}
+        onComplete={() => {
+          try { setMonsterLog(loadMonsterLog()) } catch { }
+          setActiveCure(null)
+          setHallOpen(true)
+        }}
+        onOpenGuidedSolver={(monsterId) => {
+          setActiveCure(null)
+          setGuidedSolverMonsterId(monsterId)
+          setHallOpen(true)
+        }}
+      />}
       <ReflectionJournal />
     </div>
   )
@@ -45037,6 +45642,8 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
     { key: 'lineqgym', name: 'LinearEquations-Gym', subtitle: 'Solve linear equations (MCQ)', color: 'blue' },
     { key: 'indicesgym', name: 'Indices-Gym', subtitle: 'Index laws (MCQ)', color: 'green' },
     { key: 'polygym', name: 'Polynomials Gym', subtitle: 'Arithmetic → monomial algebra (MCQ)', color: 'blue' },
+    { key: 'water-jug-lab', name: '🧪 Water Jug Lab', subtitle: 'GCD discovery — 13-level progression', color: 'teal' },
+    { key: 'equation-crafting-lab', name: '⚗️ Equation Crafting Lab', subtitle: 'Build expressions in the mixing pot', color: 'orange' },
   ] // end regularApps (MatrixMystics tile removed — uses LinearAlgebraApp via linearalgebra mode)
 
   // Combined list for search filtering
@@ -45231,6 +45838,7 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
               <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--clr-text-soft)', marginTop: '2px' }}>Run code in 50+ languages</span>
             </button>
 
+            {/* eslint-disable-next-line no-restricted-syntax -- relative navigation to /language subpath, not a base-rooted path */}
             <button onClick={() => { setMenuOpen(false); window.location.href = window.location.pathname.replace(/\/$/, '') + '/language'; }} style={{
               display: 'block', width: '100%', textAlign: 'left', padding: '10px 16px',
               background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text)',
@@ -45239,6 +45847,16 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
                onMouseLeave={e => e.target.style.background = 'none'}>
               <strong style={{ color: 'var(--clr-accent)' }}>Language Puzzles</strong>
               <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--clr-text-soft)', marginTop: '2px' }}>Fill in the blanks to create new words</span>
+            </button>
+
+            <button onClick={() => { setMenuOpen(false); window.dispatchEvent(new CustomEvent('tenali:openHall')) }} style={{
+              display: 'block', width: '100%', textAlign: 'left', padding: '10px 16px',
+              background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text)',
+              fontFamily: 'var(--font-body)', fontSize: '0.95rem', transition: 'background var(--transition)'
+            }} onMouseEnter={e => e.target.style.background = 'var(--clr-hover-strong)'}
+              onMouseLeave={e => e.target.style.background = 'none'}>
+              <strong style={{ color: 'var(--clr-accent)' }}>{'\uD83D\uDC7E'} Hall of Silly Mistakes</strong>
+              <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--clr-text-soft)', marginTop: '2px' }}>Review your misconception monsters</span>
             </button>
             </div>}
           </div>
@@ -45292,7 +45910,7 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
           const isGold = goldMastery && goldMastery.includes(app.key)
           const isCompleted = isStage3Completed(app.key, completedTopics)
           return (
-            <button key={app.key} className={`menu-card ${isGold ? 'gold-card' : app.color}`} onClick={() => onSelect(app.key)}>
+            <button key={app.key} className={`menu-card ${isGold ? 'gold-card' : app.color}`} onClick={() => { if (app.isRedirect) { window.location.href = app.path; } else { onSelect(app.key); } }}>
               <span className="menu-title">
                 {app.name}
                 {isGold && <span className="badge-indicator">🥇</span>}
@@ -47501,7 +48119,7 @@ function GKApp({ onBack, markTopicCompleted, isGoalMode = false }) {
     const res = await fetch(`${API}/gk-api/check`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }, body: JSON.stringify({  id: question.id, answerOption: option, sessionGoal }) })
     const data = await res.json()
     setIsCorrect(data.correct)
-    if (data.correct) setScore((s) => s + 1)
+    if (data.correct) setScore((s) => s + 1);
     // Show feedback with explanation
     (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
@@ -51788,7 +52406,7 @@ const fetchQuestion = async () => {
       const res = await fetch(`${API}/basicarith-api/check`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }, body: JSON.stringify({  a: question.a, b: question.b, op: question.op, answer: Number(answer), sessionGoal }) })
       const data = await res.json()
       setIsCorrect(data.correct)
-      if (data.correct) setScore(s => s + 1)
+      if (data.correct) setScore(s => s + 1);
       (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
         if (data.correct) {
@@ -52105,7 +52723,7 @@ const fetchQuestion = async (selectedDifficulty = difficulty) => {
       const termA = a * xSq
       const termB = b * x
       const sign = (v) => v >= 0 ? `+ ${v}` : `− ${Math.abs(v)}`
-      const reasoning = `y = ${a}(${x})² ${sign(b)}(${x}) ${sign(c)}\n= ${a}(${xSq}) ${sign(termB)} ${sign(c)}\n= ${termA} ${sign(termB)} ${sign(c)}\n= ${data.correctAnswer}`
+      const reasoning = `y = ${a}(${x})² ${sign(b)}(${x}) ${sign(c)}\n= ${a}(${xSq}) ${sign(termB)} ${sign(c)}\n= ${termA} ${sign(termB)} ${sign(c)}\n= ${data.correctAnswer}`;
       (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
         if (data.correct) {
@@ -53670,7 +54288,7 @@ const loadQuestion = async (excludeIds) => {
     const res = await fetch(`${API}/vocab-api/check`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }, body: JSON.stringify({  id: question.id, answerOption: option, sessionGoal }) })
     const data = await res.json()
     setIsCorrect(data.correct)
-    if (data.correct) setScore((s) => s + 1)
+    if (data.correct) setScore((s) => s + 1);
     // Show feedback with correct answer text
     (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
@@ -53890,6 +54508,76 @@ const loadQuestion = async (excludeIds) => {
 }
 
 /* ── Fraction Addition App ────────────────────────────────────── */
+function FractionsPage(props) {
+  const [learningPhase, setLearningPhase] = useState('select'); // 'select', 'learn', 'test'
+  
+  const [showQuizBelow, setShowQuizBelow] = useState(false);
+  const quizRef = useRef(null);
+
+  const startQuizBelow = () => {
+    setShowQuizBelow(true);
+    setTimeout(() => {
+      quizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  if (learningPhase === 'select') {
+    return (
+      <div className="app-shell" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '40px' }}>
+        <div className="card" style={{ maxWidth: 900, width: '90%', padding: '3rem', color: 'var(--clr-text)', textAlign: 'center', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', background: 'var(--clr-card)' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <button className="kid-btn-secondary" onClick={props.onBack} style={{ padding: '8px 16px', borderRadius: '20px', fontWeight: 'bold', border: 'none', background: 'rgba(0,0,0,0.05)', cursor: 'pointer', color: 'var(--clr-text)' }}>
+              ← Back to Home
+            </button>
+          </div>
+          <h1 style={{ marginBottom: 12, fontSize: '2.8rem', color: '#3182CE', fontWeight: '800' }}>
+            Fractions
+          </h1>
+          <p style={{ fontSize: '1.25rem', opacity: 0.8, fontWeight: '500', marginBottom: 40 }}>
+            Parts of a whole and more!
+          </p>
+          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button onClick={() => setLearningPhase('learn')} style={{ flex: '1 1 250px', maxWidth: '300px', padding: '30px', borderRadius: '16px', background: 'var(--clr-card)', border: '2px solid #48BB78', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', transition: 'transform 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
+              <span style={{ fontSize: '3rem' }}>📖</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--clr-text)' }}>Learn</span>
+              <span style={{ color: 'var(--clr-text-soft)' }}>Understand fractions through play</span>
+            </button>
+            <button onClick={() => setLearningPhase('test')} style={{ flex: '1 1 250px', maxWidth: '300px', padding: '30px', borderRadius: '16px', background: 'var(--clr-card)', border: '2px solid #0275d8', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', transition: 'transform 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
+              <span style={{ fontSize: '3rem' }}>📝</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--clr-text)' }}>Test</span>
+              <span style={{ color: 'var(--clr-text-soft)' }}>Test what you know</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (learningPhase === 'learn') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+        <FractionsLearnPage 
+          onStartTest={startQuizBelow} 
+          onBack={props.onBack} 
+        />
+        {showQuizBelow && (
+          <div ref={quizRef} className="fade-in" style={{ paddingBottom: '40px', marginTop: '20px' }}>
+            <div style={{ textAlign: 'center', margin: '40px 0 20px', padding: '20px', borderTop: '2px dashed rgba(0,0,0,0.1)' }}>
+               <h2 style={{ color: 'var(--clr-text)', fontSize: '2rem' }}>📝 Fractions Quiz</h2>
+               <p style={{ color: 'var(--clr-text-soft)' }}>Your learning is above. Good luck on the test!</p>
+            </div>
+            <FractionAddApp {...props} onBack={props.onBack} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (learningPhase === 'test') {
+    return <FractionAddApp {...props} onBack={props.onBack} />;
+  }
+}
+
 /**
  * FractionAddApp Component
  * Fraction addition quiz with three difficulty levels.
@@ -55230,7 +55918,7 @@ const loadQuestion = async () => {
       const r = await fetch(`${API}/dotprod-api/check`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }, body: JSON.stringify({ ...payload, sessionGoal }) })
       const data = await r.json()
       setIsCorrect(data.correct); setRevealed(true)
-      if (data.correct) setScore(s => s + 1)
+      if (data.correct) setScore(s => s + 1);
       (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
         if (data.correct) {
@@ -56442,6 +57130,76 @@ const GSTApp = makeQuizApp({
   placeholders: 'e.g. 180',
 })
 
+function GSTPage(props) {
+  const [learningPhase, setLearningPhase] = useState('select'); // 'select', 'learn', 'test'
+  
+  const [showQuizBelow, setShowQuizBelow] = useState(false);
+  const quizRef = useRef(null);
+
+  const startQuizBelow = () => {
+    setShowQuizBelow(true);
+    setTimeout(() => {
+      quizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  if (learningPhase === 'select') {
+    return (
+      <div className="app-shell" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '40px' }}>
+        <div className="card" style={{ maxWidth: 900, width: '90%', padding: '3rem', color: 'var(--clr-text)', textAlign: 'center', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', background: 'var(--clr-card)' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <button className="kid-btn-secondary" onClick={props.onBack} style={{ padding: '8px 16px', borderRadius: '20px', fontWeight: 'bold', border: 'none', background: 'rgba(0,0,0,0.05)', cursor: 'pointer', color: 'var(--clr-text)' }}>
+              ← Back to Home
+            </button>
+          </div>
+          <h1 style={{ marginBottom: 12, fontSize: '2.8rem', color: 'var(--clr-accent, #FF7E67)', fontWeight: '800' }}>
+            GST
+          </h1>
+          <p style={{ fontSize: '1.25rem', opacity: 0.8, fontWeight: '500', marginBottom: 40 }}>
+            Goods & Services Tax
+          </p>
+          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button onClick={() => setLearningPhase('learn')} style={{ flex: '1 1 250px', maxWidth: '300px', padding: '30px', borderRadius: '16px', background: 'var(--clr-card)', border: '2px solid #2ea043', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', transition: 'transform 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
+              <span style={{ fontSize: '3rem' }}>📖</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--clr-text)' }}>Learn</span>
+              <span style={{ color: 'var(--clr-text-soft)' }}>Understand GST concepts step by step</span>
+            </button>
+            <button onClick={() => setLearningPhase('test')} style={{ flex: '1 1 250px', maxWidth: '300px', padding: '30px', borderRadius: '16px', background: 'var(--clr-card)', border: '2px solid #0275d8', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', transition: 'transform 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
+              <span style={{ fontSize: '3rem' }}>📝</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--clr-text)' }}>Test</span>
+              <span style={{ color: 'var(--clr-text-soft)' }}>Jump straight to the GST quiz</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (learningPhase === 'learn') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+        <GSTLearnPage 
+          onStartTest={startQuizBelow} 
+          onBack={props.onBack} 
+        />
+        {showQuizBelow && (
+          <div ref={quizRef} className="fade-in" style={{ paddingBottom: '40px', marginTop: '20px' }}>
+            <div style={{ textAlign: 'center', margin: '40px 0 20px', padding: '20px', borderTop: '2px dashed rgba(0,0,0,0.1)' }}>
+               <h2 style={{ color: 'var(--clr-text)', fontSize: '2rem' }}>📝 GST Quiz</h2>
+               <p style={{ color: 'var(--clr-text-soft)' }}>Your learning is above. Good luck on the test!</p>
+            </div>
+            <GSTApp {...props} onBack={props.onBack} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (learningPhase === 'test') {
+    return <GSTApp {...props} onBack={props.onBack} />;
+  }
+}
+
 const SectionApp = makeQuizApp({
   title: 'Section Formula', subtitle: 'Midpoint, section, centroid', apiPath: 'section-api', topicKey: 'section-formula',
   diffLabels: { easy: 'Easy — Midpoint', medium: 'Medium — Internal division', hard: 'Hard — Find ratio', extrahard: 'Extra Hard — Centroid' },
@@ -57215,7 +57973,7 @@ const loadQuestion = async () => {
       const r = await fetch(`${API}/squaring-api/check`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }, body: JSON.stringify({  ...question, userAnswer, sessionGoal }) })
       const data = await r.json()
       setIsCorrect(data.correct); setRevealed(true)
-      if (data.correct) setScore(s => s + 1)
+      if (data.correct) setScore(s => s + 1);
       (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
         if (data.correct) {
@@ -58227,7 +58985,7 @@ const loadQuestion = async () => {
       const r = await fetch(`${API}/sets-api/check`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }, body: JSON.stringify({ ...payload, sessionGoal }) })
       const data = await r.json()
       setIsCorrect(data.correct); setRevealed(true)
-      if (data.correct) setScore(s => s + 1)
+      if (data.correct) setScore(s => s + 1);
       (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
         if (data.correct) {
@@ -58457,7 +59215,7 @@ const loadQuestion = async () => {
       const r = await fetch(`${API}/sequences-api/check`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }, body: JSON.stringify({ ...payload, sessionGoal }) })
       const data = await r.json()
       setIsCorrect(data.correct); setRevealed(true)
-      if (data.correct) setScore(s => s + 1)
+      if (data.correct) setScore(s => s + 1);
       (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
         if (data.correct) {
@@ -58710,7 +59468,7 @@ const loadQuestion = async () => {
       const data = await r.json()
       setIsCorrect(data.correct)
       setRevealed(true)
-      if (data.correct) setScore(s => s + 1)
+      if (data.correct) setScore(s => s + 1);
       (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
         if (data.correct) {
@@ -59994,9 +60752,9 @@ const loadQuestion = async () => {
       const data = await r.json()
       setIsCorrect(data.correct)
       setRevealed(true)
-      if (data.correct) setScore(s => s + 1)
+      if (data.correct) setScore(s => s + 1);
 
-      const prompt = question.prompt
+      const prompt = question.prompt;
       (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
         if (data.correct) {
@@ -60319,9 +61077,9 @@ const loadQuestion = async () => {
       const data = await r.json()
       setIsCorrect(data.correct)
       setRevealed(true)
-      if (data.correct) setScore(s => s + 1)
+      if (data.correct) setScore(s => s + 1);
 
-      const prompt = getPrompt(question)
+      const prompt = getPrompt(question);
       (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
         if (data.correct) {
@@ -60690,11 +61448,11 @@ const loadQuestion = async () => {
 
       setIsCorrect(data.correct)
       setRevealed(true)
-      if (data.correct) setScore(s => s + 1)
+      if (data.correct) setScore(s => s + 1);
 
       const prompt = question.mixed
         ? `${question.w1} ${question.n1}/${question.d1} ${op} ${question.w2} ${question.n2}/${question.d2}`
-        : `${question.n1}/${question.d1} ${op} ${question.n2}/${question.d2}`
+        : `${question.n1}/${question.d1} ${op} ${question.n2}/${question.d2}`;
 
       (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
@@ -61604,6 +62362,25 @@ const fetchQuestion = async (step) => {
   )
 }
 
+function coeffsToPolyStr(coeffs) {
+  const parts = [];
+  const numCoeffs = coeffs.map(Number);
+  for (let i = numCoeffs.length - 1; i >= 0; i--) {
+    const c = numCoeffs[i];
+    if (c === 0 && numCoeffs.length > 1) continue;
+    const sup = (n) => String(n).split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join('');
+    const varPart = i === 0 ? '' : i === 1 ? 'x' : `x${sup(i)}`;
+    if (parts.length === 0) {
+      parts.push(c === 1 && i > 0 ? varPart : c === -1 && i > 0 ? `-${varPart}` : `${c}${varPart}`);
+    } else {
+      const sign = c > 0 ? '+' : '-';
+      const abs = Math.abs(c);
+      parts.push(`${sign} ${abs === 1 && i > 0 ? varPart : `${abs}${varPart}`}`);
+    }
+  }
+  return parts.join(' ') || '0';
+}
+
 /* ── Polynomial Multiplication App ──────────────────── */
 /**
  * PolyMulApp Component
@@ -61729,11 +62506,14 @@ const loadQuestion = async () => {
     // Require all coefficient fields to be filled
     if (userCoeffs.some(c => c === '')) return
     const timeTaken = timer.stop()
+    // Build polynomial string from user's coefficients for the monster interceptor
+    // e.g. userCoeffs=['2','3'] => '3x + 2' (sent as userAnswer, read by Bracketeer classifier)
+    const userAnswerStr = coeffsToPolyStr(userCoeffs)
     // POST to backend to validate polynomial multiplication result
-    const res = await fetch(`${API}/polymul-api/check`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }, body: JSON.stringify({  p1: question.p1, p2: question.p2, userCoeffs: userCoeffs.map(Number), sessionGoal }) })
+    const res = await fetch(`${API}/polymul-api/check`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }, body: JSON.stringify({  p1: question.p1, p2: question.p2, userCoeffs: userCoeffs.map(Number), userAnswer: userAnswerStr, sessionGoal }) })
     const data = await res.json()
     setIsCorrect(data.correct)
-    if (data.correct) setScore(s => s + 1)
+    if (data.correct) setScore(s => s + 1);
     (() => {
         const _ci = data.lil?.coinsEarned > 0 ? ` (+${data.lil.coinsEarned} coins!)` : ''
         if (data.correct) {

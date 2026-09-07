@@ -564,7 +564,7 @@
     },
     {
         "term":  "square",
-        "definition":  "A four-sided shape with all sides equal and all angles 90Ã‚Â°.",
+        "definition":  "A four-sided shape with all sides equal and all angles 90°.",
         "aliases":  [
                         "squares"
                     ],
@@ -575,7 +575,7 @@
     },
     {
         "term":  "rectangle",
-        "definition":  "A four-sided shape with opposite sides equal and all angles 90Ã‚Â°.",
+        "definition":  "A four-sided shape with opposite sides equal and all angles 90°.",
         "aliases":  [
                         "rectangles"
                     ],
@@ -674,7 +674,7 @@
     },
     {
         "term":  "acute angle",
-        "definition":  "An angle smaller than a right angle (less than 90Ã‚Â°).",
+        "definition":  "An angle smaller than a right angle (less than 90°).",
         "aliases":  [
                         "acute angles"
                     ],
@@ -685,7 +685,7 @@
     },
     {
         "term":  "obtuse angle",
-        "definition":  "An angle bigger than a right angle but smaller than a straight line (between 90Ã‚Â° and 180Ã‚Â°).",
+        "definition":  "An angle bigger than a right angle but smaller than a straight line (between 90° and 180°).",
         "aliases":  [
                         "obtuse angles"
                     ],
@@ -696,7 +696,7 @@
     },
     {
         "term":  "reflex angle",
-        "definition":  "An angle bigger than a straight line but smaller than a full turn (between 180Ã‚Â° and 360Ã‚Â°).",
+        "definition":  "An angle bigger than a straight line but smaller than a full turn (between 180° and 360°).",
         "aliases":  [
                         "reflex angles"
                     ],
@@ -740,7 +740,7 @@
     },
     {
         "term":  "perpendicular",
-        "definition":  "Two lines that meet or cross at a right angle (90Ã‚Â°).",
+        "definition":  "Two lines that meet or cross at a right angle (90°).",
         "aliases":  [
 
                     ],
@@ -950,7 +950,7 @@
     },
     {
         "term":  "right-angled triangle",
-        "definition":  "A triangle that has one right angle (90Ã‚Â°).",
+        "definition":  "A triangle that has one right angle (90°).",
         "aliases":  [
                         "right-angled triangles",
                         "right angled triangle",
@@ -1218,7 +1218,7 @@
     },
     {
         "term":  "quadratic",
-        "definition":  "An expression or equation where the highest power of the variable is 2 (e.g. xÃ‚Â² + 3x = 4).",
+        "definition":  "An expression or equation where the highest power of the variable is 2 (e.g. x² + 3x = 4).",
         "aliases":  [
                         "quadratics"
                     ],
@@ -1229,7 +1229,7 @@
     },
     {
         "term":  "cubic",
-        "definition":  "An expression or equation where the highest power of the variable is 3 (e.g. xÃ‚Â³ + 2x).",
+        "definition":  "An expression or equation where the highest power of the variable is 3 (e.g. x³ + 2x).",
         "aliases":  [
                         "cubics"
                     ],
@@ -1511,7 +1511,7 @@
     },
     {
         "term":  "power",
-        "definition":  "A small raised number showing how many times to multiply a number by itself (e.g. the 3 in 2Ã‚Â³).",
+        "definition":  "A small raised number showing how many times to multiply a number by itself (e.g. the 3 in 2³).",
         "aliases":  [
                         "powers"
                     ],
@@ -1522,7 +1522,7 @@
     },
     {
         "term":  "base",
-        "definition":  "The number being multiplied by itself in a power (e.g. the 2 in 2Ã‚Â³).",
+        "definition":  "The number being multiplied by itself in a power (e.g. the 2 in 2³).",
         "aliases":  [
                         "bases"
                     ],
@@ -1555,7 +1555,7 @@
     },
     {
         "term":  "fraction",
-        "definition":  "A number written as one number divided by another, like Ã‚Â¾.",
+        "definition":  "A number written as one number divided by another, like ¾.",
         "aliases":  [
                         "fractions"
                     ],

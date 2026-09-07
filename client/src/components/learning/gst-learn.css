@@ -1,0 +1,37 @@
+/* ─── GST Learn Page ─── */
+/* Container and header are GST-specific.
+   Step cards, buttons, completion, fade-in, interactive/challenge containers,
+   detective cards, progress track, etc. are all shared from angles-learn.css. */
+
+.gst-learn-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Quicksand', 'Nunito', sans-serif;
+  color: var(--clr-text);
+}
+
+.gst-learn-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.gst-learn-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--clr-text-soft, #e8864a);
+  margin-bottom: 10px;
+}
+
+.gst-learn-header p {
+  font-size: 1.2rem;
+  color: var(--clr-text-muted, #718096);
+}
+
+/* Override interactive-container to work well on smaller screens */
+@media (max-width: 600px) {
+  .gst-learn-container .interactive-container,
+  .gst-learn-container .challenge-container {
+    padding: 16px;
+  }
+}
