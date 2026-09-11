@@ -19,9 +19,25 @@
 ---
 
 <!-- live-changelog:start -->
-### 📊 Total: 983 commits · 70 active days · 34 unique authors
+### 📊 Total: 1003 commits · 72 active days · 37 unique authors
 
 > **📖 How to read this:** Each entry shows a clickable SHA, the author, and a one-line subject. Sub-bullets show the **exact files touched** with per-file `+additions −deletions`, the **total line stats**, and (when present) the **commit body** explaining what & why.
+
+#### 📅 2026-09-10  <sub>(4 commits)</sub>
+
+- 📌 [`30756d70`](https://github.com/vicharanashala/tenali/commit/30756d700626c7aaf80ceff33a6e011111611ddd) — **jgupta05072003-code** — 🔀 PR [#104](https://github.com/vicharanashala/tenali/pull/104) from `Vaibhav-sa30` — feature/docs
+- 📌 [`f3e2df4a`](https://github.com/vicharanashala/tenali/commit/f3e2df4a45fc8f4f0715e5a42c057ee18c0bc16e) — **jgupta05072003-code** — 🔀 PR [#183](https://github.com/vicharanashala/tenali/pull/183) from `Code-Zero07` — docs/onboarding-arijit
+- 📌 [`b3ad3119`](https://github.com/vicharanashala/tenali/commit/b3ad31194a23effab3080226333107f89021e96e) — **Krishna Gelra** — 🔀 PR [#187](https://github.com/vicharanashala/tenali/pull/187) from `lucky-pluton` — fix/185c-question-punctuation
+- 📌 [`b3f85b36`](https://github.com/vicharanashala/tenali/commit/b3f85b36c18ebc15c2f697076e50ba2e7d2972ba) — **Krishna Gelra** — 🔀 PR [#186](https://github.com/vicharanashala/tenali/pull/186) from `lucky-pluton` — fix/180-coordinate-convention
+
+#### 📅 2026-09-08  <sub>(2 commits)</sub>
+
+- 📌 [`d0ab1849`](https://github.com/vicharanashala/tenali/commit/d0ab18495da59a63c8ce2d54fb755a646900c0dc) — **Disha Singh** — Fix duplicate punctuation in addition word problems
+    - 📁 **1 file:** `client/src/App.jsx` `+1 −1`
+    - 📊 **`+1 −1`** · 1 file
+- 📌 [`3d6ca540`](https://github.com/vicharanashala/tenali/commit/3d6ca5403ca37d705f86c66379258656e2c136b1) — **Disha Singh** — Fix coordinate convention in Piggy Bank Detectives
+    - 📁 **1 file:** `client/src/LinearAlgebraApp.jsx` `+5 −5`
+    - 📊 **`+5 −5`** · 1 file
 
 #### 📅 2026-09-07  <sub>(8 commits)</sub>
 
@@ -65,11 +81,14 @@
     - 📁 **1 file:** `client/src/vachana/exercises/SchemaClassifier.jsx` `+37 −31`
     - 📊 **`+37 −31`** · 1 file
 
-#### 📅 2026-09-04  <sub>(1 commit)</sub>
+#### 📅 2026-09-04  <sub>(2 commits)</sub>
 
 - 🐛 [`a887ed6a`](https://github.com/vicharanashala/tenali/commit/a887ed6adece7aa23b576f310dcccbb7a0ec096f) — **priyanshu7725** — add missing semicolons before IIFEs across all apps in App.jsx to prevent ASI TypeError
     - 📁 **1 file:** `client/src/App.jsx` `+16 −16`
     - 📊 **`+16 −16`** · 1 file
+- 📝 [`f433565c`](https://github.com/vicharanashala/tenali/commit/f433565c1c95ce6c443ce66b0a66af149b902160) — **Code-Zero07** — add onboarding document for Arijit Deb
+    - 📁 **1 file:** `Ideas/ONBOARDING-Arijit-Deb.md` `+184 −0`
+    - 📊 **`+184 −0`** · 1 file
 
 #### 📅 2026-09-03  <sub>(7 commits)</sub>
 
@@ -444,7 +463,7 @@
     - 📁 **1 file:** `client/src/App.jsx` `+9 −9`
     - 📊 **`+9 −9`** · 1 file
 
-#### 📅 2026-07-29  <sub>(16 commits)</sub>
+#### 📅 2026-07-29  <sub>(21 commits)</sub>
 
 - 📌 [`60732b13`](https://github.com/vicharanashala/tenali/commit/60732b132ee47ecbc9742e354e86687d750ca6d8) — **jgupta05072003-code** — 🔀 PR [#114](https://github.com/vicharanashala/tenali/pull/114) from `vicharanashala` — fix/quiz-custom-components-request-cancellation
 - 🐛 [`8d687982`](https://github.com/vicharanashala/tenali/commit/8d6879823b827fd1ea4520dc61e7c3ec4c8fae0f) — **Jinal Gupta** — add request cancellation to the 6 highest-traffic custom quiz components
@@ -478,8 +497,23 @@
 - 🐛 [`563d8391`](https://github.com/vicharanashala/tenali/commit/563d83911011b3ab5cf96ecfe6c1cc58574e206e) — **Jinal Gupta** — move admin seed credential out of source into env
     - 📁 **2 files:** `.env.example` `+5 −0`, `server/auth.js` `+21 −15`
     - 📊 **`+26 −15`** · 2 files
+- 📝 [`578f9c44`](https://github.com/vicharanashala/tenali/commit/578f9c445be906c46665cb0539936784501d7943) — **Vaibhav** — add ui-guidelines.md and link it in orientation.md
+    - 📁 **2 files:** `docs/orientation.md` `+3 −2`, `docs/ui-guidelines.md` `+63 −0`
+    - 📊 **`+66 −2`** · 2 files
+- 📝 [`eb25882f`](https://github.com/vicharanashala/tenali/commit/eb25882f94a7e598823c37398a2ad20b738826e4) — **Vaibhav** — consolidate presentation guide into orientation doc
+    - 📁 **1 file:** `docs/orientation.md` `+5 −4`
+    - 📊 **`+5 −4`** · 1 file
+- 📝 [`f81b2b97`](https://github.com/vicharanashala/tenali/commit/f81b2b977cb17d2ba4fb18a18c33b961cdfb8ee5) — **Vaibhav** — finalize feature issue template with generic problem statement comment
+    - 📁 **1 file:** `docs/templates/feat-issue-temp.md` `+2 −4`
+    - 📊 **`+2 −4`** · 1 file
+- 📝 [`2f16735b`](https://github.com/vicharanashala/tenali/commit/2f16735bb3ef1a8f77ddba5c9da713d5d94fdb15) — **Vaibhav** — simplify feature issue template and remove frontmatter
+    - 📁 **1 file:** `docs/templates/feat-issue-temp.md` `+1 −10`
+    - 📊 **`+1 −10`** · 1 file
+- 📝 [`5e1026cb`](https://github.com/vicharanashala/tenali/commit/5e1026cb5193e8ac4a3db8b12e8c6298edf3c689) — **Vaibhav** — use generic examples and sync problem statement count in templates
+    - 📁 **2 files:** `docs/templates/0000-rfc-template.md` `+3 −3`, `docs/templates/feat-issue-temp.md` `+1 −1`
+    - 📊 **`+4 −4`** · 2 files
 
-#### 📅 2026-07-28  <sub>(8 commits)</sub>
+#### 📅 2026-07-28  <sub>(16 commits)</sub>
 
 - 📌 [`d5f3dd7b`](https://github.com/vicharanashala/tenali/commit/d5f3dd7b5391c81e348ea04a958148ec6cb0cd93) — **jgupta05072003-code** — 🔀 PR [#106](https://github.com/vicharanashala/tenali/pull/106) from `vicharanashala` — fix/translation-api-resilience
 - 📌 [`c748a8dd`](https://github.com/vicharanashala/tenali/commit/c748a8ddfc2ea5dbb18f02eea1aa56dff834be77) — **jgupta05072003-code** — 🔀 PR [#105](https://github.com/vicharanashala/tenali/pull/105) from `vicharanashala` — fix/vite-base-env
@@ -496,6 +530,30 @@
 - 📝 [`14cada5c`](https://github.com/vicharanashala/tenali/commit/14cada5cfaa61ee05da3aa5c007f563320e2ae1a) — **Jinal Gupta** — append Jul 17–27 commit history to CHANGELOG.md
     - 📁 **1 file:** `CHANGELOG.md` `+196 −0`
     - 📊 **`+196 −0`** · 1 file
+- 📝 [`66232e44`](https://github.com/vicharanashala/tenali/commit/66232e4405048a545661b315785b91b30332bf22) — **Vaibhav** — remove key benefits section
+    - 📁 **1 file:** `docs/rfc-based-proposal-review.md` `+0 −5`
+    - 📊 **`+0 −5`** · 1 file
+- 📝 [`7ddfaeab`](https://github.com/vicharanashala/tenali/commit/7ddfaeab041edeb8a58c6d72c20c2a7e058dfe00) — **Vaibhav** — remove internal rationale from proposal review process
+    - 📁 **1 file:** `docs/rfc-based-proposal-review.md` `+0 −1`
+    - 📊 **`+0 −1`** · 1 file
+- 📝 [`c19761a4`](https://github.com/vicharanashala/tenali/commit/c19761a4adc0c7b852cec4d3d6453f80003c7332) — **Vaibhav** — update workflow to Issue-to-PR funnel for interns
+    - 📁 **1 file:** `docs/rfc-based-proposal-review.md` `+28 −32`
+    - 📊 **`+28 −32`** · 1 file
+- 📝 [`9e7673c1`](https://github.com/vicharanashala/tenali/commit/9e7673c1aac0b6fc00f7c1495b1ff9d294f61aec) — **Vaibhav** — add Research Reference section and update workflow note
+    - 📁 **1 file:** `docs/templates/feat-issue-temp.md` `+4 −1`
+    - 📊 **`+4 −1`** · 1 file
+- 📝 [`9d1040e3`](https://github.com/vicharanashala/tenali/commit/9d1040e34a164f708cf07dee728525aeacfe7abb) — **Vaibhav** — restructure feature issue template
+    - 📁 **1 file:** `docs/templates/feat-issue-temp.md` `+22 −0`
+    - 📊 **`+22 −0`** · 1 file
+- 📝 [`c97c29e4`](https://github.com/vicharanashala/tenali/commit/c97c29e4861ca8042903f0b6cacdf777f0f391d2) — **Vaibhav** — simplify CONTRIBUTING.md for general open source contributors
+    - 📁 **1 file:** `CONTRIBUTING.md` `+34 −0`
+    - 📊 **`+34 −0`** · 1 file
+- 📝 [`69c02226`](https://github.com/vicharanashala/tenali/commit/69c02226f23efb91af8a908ba7888b30623ec1c1) — **Vaibhav** — rename PR template to pr-template.md
+    - 📁 **1 file:** `docs/templates/{PULL_REQUEST_TEMPLATE.md => pr-template.md}`
+    - 📊 **`+0 −0`** · 1 file
+- 📝 [`6002500e`](https://github.com/vicharanashala/tenali/commit/6002500e7e2eaaae756c2d981a098f185fa3efb6) — **Vaibhav** — add documentation directory structure and templates
+    - 📁 **7 files:** `.gitignore` `+1 −1`, `docs/case-studies/duolingo.md` `+111 −0`, `docs/orientation.md` `+97 −0`, `docs/problem-statements.md` `+75 −0`, `docs/rfc-based-proposal-review.md` `+44 −0`, `docs/templates/0000-rfc-template.md` `+108 −0`, `docs/templates/PULL_REQUEST_TEMPLATE.md` `+18 −0`
+    - 📊 **`+454 −1`** · 7 files
 - 📝 [`209a51f2`](https://github.com/vicharanashala/tenali/commit/209a51f247b8bddb0e1f19b7c732feb0b6173947) — **priyanshu7725** — update CHANGELOG.md for v0.1.2
     - 📁 **1 file:** `client/src/monsters/CHANGELOG.md` `+29 −0`
     - 📊 **`+29 −0`** · 1 file

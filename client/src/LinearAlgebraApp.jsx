@@ -28,16 +28,16 @@ const MISSIONS = [
     options: null,
     correct: 0,
     explanation: "Since Ram = 2 x Lakshman, points are (2L,L) = t(2,1). All scalar multiples lie on the same line through the origin!",
-    ggbHint: 'Type coordinates like (10,20) and (20,40). Then type: Line((0,0),(10,20)).',
+    ggbHint: 'Type coordinates like (20,10) and (40,20). Then type: Line((0,0),(20,10)).',
     ggbSteps: [
       'Click in the Input bar at bottom.',
-      'Type: (10,20) and press Enter.',
-      'Type: (20,40) and press Enter.',
-      'Type: Line((0,0),(10,20)) and press Enter.',
+      'Type: (20,10) and press Enter.',
+      'Type: (40,20) and press Enter.',
+      'Type: Line((0,0),(20,10)) and press Enter.',
       'Both points lie on same line through origin!'
     ],
     quiz: [
-      { q: "If Ram's savings = 3x Lakshman's, do points (L,R) still lie on a line through the origin?", type: 'yesno', correct: 0 },
+      { q: "If Ram's savings = 3x Lakshman's, do points (R,L) still lie on a line through the origin?", type: 'yesno', correct: 0 },
       { q: 'For points (2,1), (4,2), (6,3), is the ratio R:L always the same (2:1)?', type: 'yesno', correct: 0 },
       { q: 'Do all scalar multiples t(2,1) lie on the same line through the origin?', type: 'yesno', correct: 0 }
     ],

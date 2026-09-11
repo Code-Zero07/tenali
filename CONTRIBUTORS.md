@@ -50,23 +50,23 @@
 <!-- live-snapshot:start -->
 | 🏆 Commits | 🔀 Merged PRs | 👥 Contributors | 🧩 Puzzles | 📚 Vocab | 🌍 GK |
 |----------:|------------:|--------------:|---------:|-------:|----:|
-| **983** | **87** | **35** | **69** | **7,662** | **991** |
+| **1003** | **91** | **37** | **69** | **7,662** | **991** |
 <!-- live-snapshot:end -->
 
 ## 🥇 Leaderboard
 
 <!-- live-rank:start -->
-_Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions[bot]`](https://github.com/features/actions) on every push to `main` and every 12h._
+_Live data — last regenerated 2026-09-11 · auto-refreshed by [`github-actions[bot]`](https://github.com/features/actions) on every push to `main` and every 12h._
 
 | # | 👤 Real Name | 🔗 GitHub ID | 📝 Commits | 🔀 PRs | 🏷️ Role |
 |--:|:-------------|:-------------|----------:|-----:|:--------|
 | 🥇 | **S. R. S. Iyengar**<br/><sub>↳ also commits as <b>sudarshan</b></sub> | [sudarshansudarshan](https://github.com/sudarshansudarshan) | **281** | 0  | Lead Architect · Curriculum Author · 69 puzzle families |
 | 🥈 | **Mudit Agrawal** | [muditagrawal2007](https://github.com/muditagrawal2007) | **193** | 25  | Maintainer · Battle Arena · Linear Algebra · Sudoku · Playground |
-| 🥉 | **Jinal Gupta** | [jgupta05072003-code](https://github.com/jgupta05072003-code) | **100** | 0  | Upstream Repo Maintainer & PR Reviewer |
+| 🥉 | **Jinal Gupta** | [jgupta05072003-code](https://github.com/jgupta05072003-code) | **102** | 0  | Upstream Repo Maintainer & PR Reviewer |
 | 4. | **Priyanshu Kumar** | [priyanshu7725](https://github.com/priyanshu7725) | **54** | 1  | — |
-| 5. | **Lakshmi Varshini Nandula ** | [varshini-nandula](https://github.com/varshini-nandula) | **43** | 1  | Profile Showcase & Offline Storage |
-| 6. | **Sameer Mishra** | [24F3005086](https://github.com/24F3005086) | **36** | 4  | i18n · Accessibility · Concept Labs |
-| 7. | **Vaibhav Satish**<br/><sub>↳ also commits as <b>Vaibhav</b></sub> | [Vaibhav-sa30](https://github.com/Vaibhav-sa30) | **35** | 2  | Vachana Literacy Lab & Vocabulary |
+| 5. | **Vaibhav Satish**<br/><sub>↳ also commits as <b>Vaibhav</b></sub> | [Vaibhav-sa30](https://github.com/Vaibhav-sa30) | **48** | 3  | Vachana Literacy Lab & Vocabulary |
+| 6. | **Lakshmi Varshini Nandula ** | [varshini-nandula](https://github.com/varshini-nandula) | **43** | 1  | Profile Showcase & Offline Storage |
+| 7. | **Sameer Mishra** | [24F3005086](https://github.com/24F3005086) | **36** | 4  | i18n · Accessibility · Concept Labs |
 | 8. | **DIPTOSUBHRO DATTA**<br/><sub>↳ also commits as <b>Dipto Subhro</b></sub> | [diptosubhro-ctrl](https://github.com/diptosubhro-ctrl) | **33** | 1  | Tutorial System + Noise Filter Refactor |
 | 9. | **Ritish Karmakar** | [Ritish007-svg](https://github.com/Ritish007-svg) | **27** | 1  | Percentages Level-wise Explanation |
 | 10. | **saniyajos**<br/><sub>↳ also commits as <b>SaniyaJos</b></sub> | [saniyajos](https://github.com/saniyajos) | **22** | 0  | — |
@@ -81,20 +81,22 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
 | 19. | **krishna009-pro**<br/><sub>↳ also commits as <b>Krishna009-pro</b></sub> | [krishna009-pro](https://github.com/krishna009-pro) | **6** | 0  | — |
 | 20. | **SemiColonSlayer** | [sharonyamita-spec](https://github.com/sharonyamita-spec) | **6** | 1  | Math Detective Agency |
 | 21. | **PANDRAJU POORVI PRAVALLIKA** | [poorvipravallika06](https://github.com/poorvipravallika06) | **6** | 1  | HCF/LCM Interactive Module |
-| 22. | **Rukmender T** | [RukmenderT](https://github.com/RukmenderT) | **5** | 1  | Curiosity Mode |
-| 23. | **Disha Bansal** | [disha01bansal](https://github.com/disha01bansal) | **4** | 0  | — |
-| 24. | **pradeep-gupta7**<br/><sub>↳ also commits as <b>Pradeep-gupta7</b></sub> | [pradeep-gupta7](https://github.com/pradeep-gupta7) | **3** | 0  | — |
-| 25. | **S. Hamsalekha**<br/><sub>↳ also commits as <b>S Hamsalekha</b></sub> | [S-Hamsalekha-annamai](https://github.com/S-Hamsalekha-annamai) | **3** | 1  | Track User Progress |
-| 26. | **Krishna Gelra** | [KrishnaG-101](https://github.com/KrishnaG-101) | **3** | 1  | Language Puzzles Framework |
-| 27. | **Remy baastin rayappan** | [remy-baastin](https://github.com/remy-baastin) | **2** | 1  | — |
-| 28. | **harsh**<br/><sub>↳ also commits as <b>Harsh</b></sub> | [harsh](https://github.com/harsh) | **2** | 0  | — |
-| 29. | **Anshul Kanodia** | [AnshulKanodia](https://github.com/AnshulKanodia) | **2** | 0  | Geometry Game Restoration |
-| 30. | **jinal-gupta**<br/><sub>↳ also commits as <b>JINAL GUPTA</b></sub> | [jinal-gupta](https://github.com/jinal-gupta) | **1** | 0  | — |
-| 31. | **athira-kv**<br/><sub>↳ also commits as <b>Athira Kv</b></sub> | [athira-kv](https://github.com/athira-kv) | **1** | 0  | — |
-| 32. | **garv-arora**<br/><sub>↳ also commits as <b>Garv Arora</b></sub> | [garv-arora](https://github.com/garv-arora) | **1** | 0  | — |
-| 33. | **pradeep-gupta**<br/><sub>↳ also commits as <b>Pradeep Gupta</b></sub> | [pradeep-gupta](https://github.com/pradeep-gupta) | **1** | 0  | — |
-| 34. | **priyanshu-kumar**<br/><sub>↳ also commits as <b>Priyanshu Kumar</b></sub> | [priyanshu-kumar](https://github.com/priyanshu-kumar) | **1** | 0  | — |
-| 35. | **Vasuki** | [vasuki-tenali](https://github.com/vasuki-tenali) | **1** | 0  | Infra contributor |
+| 22. | **Krishna Gelra** | [KrishnaG-101](https://github.com/KrishnaG-101) | **5** | 1  | Language Puzzles Framework |
+| 23. | **Rukmender T** | [RukmenderT](https://github.com/RukmenderT) | **5** | 1  | Curiosity Mode |
+| 24. | **Disha Bansal** | [disha01bansal](https://github.com/disha01bansal) | **4** | 0  | — |
+| 25. | **pradeep-gupta7**<br/><sub>↳ also commits as <b>Pradeep-gupta7</b></sub> | [pradeep-gupta7](https://github.com/pradeep-gupta7) | **3** | 0  | — |
+| 26. | **S. Hamsalekha**<br/><sub>↳ also commits as <b>S Hamsalekha</b></sub> | [S-Hamsalekha-annamai](https://github.com/S-Hamsalekha-annamai) | **3** | 1  | Track User Progress |
+| 27. | **disha-singh**<br/><sub>↳ also commits as <b>Disha Singh</b></sub> | [disha-singh](https://github.com/disha-singh) | **2** | 0  | — |
+| 28. | **Remy baastin rayappan** | [remy-baastin](https://github.com/remy-baastin) | **2** | 1  | — |
+| 29. | **harsh**<br/><sub>↳ also commits as <b>Harsh</b></sub> | [harsh](https://github.com/harsh) | **2** | 0  | — |
+| 30. | **Anshul Kanodia** | [AnshulKanodia](https://github.com/AnshulKanodia) | **2** | 0  | Geometry Game Restoration |
+| 31. | **jinal-gupta**<br/><sub>↳ also commits as <b>JINAL GUPTA</b></sub> | [jinal-gupta](https://github.com/jinal-gupta) | **1** | 0  | — |
+| 32. | **athira-kv**<br/><sub>↳ also commits as <b>Athira Kv</b></sub> | [athira-kv](https://github.com/athira-kv) | **1** | 0  | — |
+| 33. | **code-zero07**<br/><sub>↳ also commits as <b>Code-Zero07</b></sub> | [code-zero07](https://github.com/code-zero07) | **1** | 0  | — |
+| 34. | **garv-arora**<br/><sub>↳ also commits as <b>Garv Arora</b></sub> | [garv-arora](https://github.com/garv-arora) | **1** | 0  | — |
+| 35. | **pradeep-gupta**<br/><sub>↳ also commits as <b>Pradeep Gupta</b></sub> | [pradeep-gupta](https://github.com/pradeep-gupta) | **1** | 0  | — |
+| 36. | **priyanshu-kumar**<br/><sub>↳ also commits as <b>Priyanshu Kumar</b></sub> | [priyanshu-kumar](https://github.com/priyanshu-kumar) | **1** | 0  | — |
+| 37. | **Vasuki** | [vasuki-tenali](https://github.com/vasuki-tenali) | **1** | 0  | Infra contributor |
 <!-- live-rank:end -->
 
 ---
@@ -176,7 +178,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><b>Jinal Gupta</b>
         <br/><sub><i>(git: J. Gupta)</i></sub>
         <br/><a href="https://github.com/jgupta05072003-code">@jgupta05072003-code</a>
-        <br/><sub>🏆 100 commits · 0 PRs merged</sub>
+        <br/><sub>🏆 102 commits · 0 PRs merged</sub>
       </td>
       <td valign="top" width="*">
         <h4>🥉 Upstream Repo Maintainer & PR Reviewer</h4>
@@ -220,13 +222,40 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
   <table>
     <tr>
       <td align="center" width="220">
+        <a href="https://github.com/Vaibhav-sa30"><img src="https://avatars.githubusercontent.com/u/86743451?v=4&s=120" width="120" style="border-radius:50%; border:3px solid #FF6B6B;" alt="Vaibhav Satish"/></a>
+        <br/><b>Vaibhav Satish</b>
+        <br/><a href="https://github.com/Vaibhav-sa30">@Vaibhav-sa30</a>
+        <br/><sub>🏆 48 commits · 3 PRs merged</sub>
+        <br/><sub>📍 India · 🐦 @vee42O · 🌐 https://vaibhavsatish-research.vercel.app</sub>
+        <br/><sub>🔗 also commits as: <b>Vaibhav</b></sub>
+      </td>
+      <td valign="top" width="*">
+        <h4>5. Vachana Literacy Lab & Vocabulary</h4>
+        <ul>
+          <li>🆕 <b>Vachana Mathematical Literacy Lab (PR #18)</b> — standalone literacy module with grid dashboard, 8+ exercises across v0.1.x</li>
+          <li>🔤 <b>Notation Literacy Exercise (PR #57)</b> — teaches math notation & root decoding with etymology references</li>
+          <li>🔍 <b>Vocabulary Explorer</b> — adaptive placement check, MCQ auto-submit, guided exploration</li>
+          <li>🧭 <b>Vocab Quiz UX</b> — numeric shortcuts, color-coded feedback, manual submit, previous-question navigation</li>
+          <li>🪟 <b>History view fix</b> — placement-test state overlap fix + previous button</li>
+          <li>♻️ <b>Modularization</b> — split Vachana Literacy Lab into separate component files</li>
+          <li>📚 <b>Exercise research docs</b> — pedagogical references + CHANGELOG entries for every v0.1.x release</li>
+        </ul>
+      </td>
+    </tr>
+  </table>
+</p>
+
+<p align="center">
+  <table>
+    <tr>
+      <td align="center" width="220">
         <a href="https://github.com/varshini-nandula"><img src="https://avatars.githubusercontent.com/u/174730796?v=4&s=120" width="120" style="border-radius:50%; border:3px solid #CD7F32;" alt="Lakshmi Varshini Nandula "/></a>
         <br/><b>Lakshmi Varshini Nandula </b>
         <br/><a href="https://github.com/varshini-nandula">@varshini-nandula</a>
         <br/><sub>🏆 43 commits · 1 PR merged</sub>
       </td>
       <td valign="top" width="*">
-        <h4>5. Profile Showcase & Offline Storage</h4>
+        <h4>6. Profile Showcase & Offline Storage</h4>
         <ul>
           <li>🏅 <b>Profile Achievement Showcase (PR #59)</b> — badge cabinet, category dropdown, circular close buttons</li>
           <li>📦 <b>Scalable MongoDB collections</b> — <code>UserStats</code>, <code>UserMilestone</code>, <code>UserTopicProgress</code>, <code>UserCollectionProgress</code></li>
@@ -252,7 +281,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>🏆 36 commits · 4 PRs merged</sub>
       </td>
       <td valign="top" width="*">
-        <h4>6. i18n · Accessibility · Concept Labs</h4>
+        <h4>7. i18n · Accessibility · Concept Labs</h4>
         <ul>
           <li>🌍 <b>Internationalization (PR #51)</b> — full i18n framework, locales directory, translation layer</li>
           <li>♿ <b>Accessibility panel (PR #50)</b> — high-contrast toggle, reduced motion, keyboard nav, ARIA roles</li>
@@ -262,33 +291,6 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
           <li>🧹 <b>ESLint cleanup</b> — removed unused vars, suppressed <code>react-refresh</code> warnings</li>
           <li>🧩 <b>MasteryBadge integration</b> — wired <code>updateBKT</code> stub into concept playgrounds</li>
           <li>🐛 <b>Bugfix sweeps</b> — translation, dark/light, mastery-badge, concept-playgrounds localization</li>
-        </ul>
-      </td>
-    </tr>
-  </table>
-</p>
-
-<p align="center">
-  <table>
-    <tr>
-      <td align="center" width="220">
-        <a href="https://github.com/Vaibhav-sa30"><img src="https://avatars.githubusercontent.com/u/86743451?v=4&s=120" width="120" style="border-radius:50%; border:3px solid #FF6B6B;" alt="Vaibhav Satish"/></a>
-        <br/><b>Vaibhav Satish</b>
-        <br/><a href="https://github.com/Vaibhav-sa30">@Vaibhav-sa30</a>
-        <br/><sub>🏆 35 commits · 2 PRs merged</sub>
-        <br/><sub>📍 India · 🐦 @vee42O · 🌐 https://vaibhavsatish-research.vercel.app</sub>
-        <br/><sub>🔗 also commits as: <b>Vaibhav</b></sub>
-      </td>
-      <td valign="top" width="*">
-        <h4>7. Vachana Literacy Lab & Vocabulary</h4>
-        <ul>
-          <li>🆕 <b>Vachana Mathematical Literacy Lab (PR #18)</b> — standalone literacy module with grid dashboard, 8+ exercises across v0.1.x</li>
-          <li>🔤 <b>Notation Literacy Exercise (PR #57)</b> — teaches math notation & root decoding with etymology references</li>
-          <li>🔍 <b>Vocabulary Explorer</b> — adaptive placement check, MCQ auto-submit, guided exploration</li>
-          <li>🧭 <b>Vocab Quiz UX</b> — numeric shortcuts, color-coded feedback, manual submit, previous-question navigation</li>
-          <li>🪟 <b>History view fix</b> — placement-test state overlap fix + previous button</li>
-          <li>♻️ <b>Modularization</b> — split Vachana Literacy Lab into separate component files</li>
-          <li>📚 <b>Exercise research docs</b> — pedagogical references + CHANGELOG entries for every v0.1.x release</li>
         </ul>
       </td>
     </tr>
@@ -629,13 +631,35 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
   <table>
     <tr>
       <td align="center" width="220">
+        <a href="https://github.com/KrishnaG-101"><img src="https://avatars.githubusercontent.com/u/155518412?v=4&s=120" width="120" style="border-radius:50%; border:3px solid #27AE60;" alt="Krishna Gelra"/></a>
+        <br/><b>Krishna Gelra</b>
+        <br/><a href="https://github.com/KrishnaG-101">@KrishnaG-101</a>
+        <br/><sub>🏆 5 commits · 1 PR merged</sub>
+      </td>
+      <td valign="top" width="*">
+        <h4>22. Language Puzzles Framework</h4>
+        <ul>
+          <li>🧩 <b>Modular Language Puzzles framework (PR #35)</b> — pluggable architecture for word/letter puzzles</li>
+          <li>🆕 <b>Word Creator</b> — fill-in-the-blanks to create new words</li>
+          <li>⚡ <b>Latency optimization</b> — reduced <code>wordCreator</code> verification time</li>
+          <li>🔀 <b>Merge conflict resolution</b> — clean upstream merge</li>
+        </ul>
+      </td>
+    </tr>
+  </table>
+</p>
+
+<p align="center">
+  <table>
+    <tr>
+      <td align="center" width="220">
         <a href="https://github.com/RukmenderT"><img src="https://avatars.githubusercontent.com/u/206398340?v=4&s=120" width="120" style="border-radius:50%; border:3px solid #8E44AD;" alt="Rukmender T"/></a>
         <br/><b>Rukmender T</b>
         <br/><a href="https://github.com/RukmenderT">@RukmenderT</a>
         <br/><sub>🏆 5 commits · 1 PR merged</sub>
       </td>
       <td valign="top" width="*">
-        <h4>22. Curiosity Mode</h4>
+        <h4>23. Curiosity Mode</h4>
         <ul>
           <li>🤔 <b>Curiosity Mode (PR #56)</b> — variation discovery puzzles that explore "what if" scenarios</li>
           <li>🪟 <b>Hamburger menu integration</b> — restored Curiosity Mode after upstream merges</li>
@@ -657,7 +681,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>🏆 4 commits · 0 PRs merged</sub>
       </td>
       <td valign="top" width="*">
-        <h4>23. New Contributor</h4>
+        <h4>24. New Contributor</h4>
         <ul>
           <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
           <li>📊 <b>4 commits</b> across this repo's history</li>
@@ -679,7 +703,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>🔗 also commits as: <b>Pradeep-gupta7</b></sub>
       </td>
       <td valign="top" width="*">
-        <h4>24. New Contributor</h4>
+        <h4>25. New Contributor</h4>
         <ul>
           <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
           <li>📊 <b>3 commits</b> across this repo's history</li>
@@ -701,7 +725,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>🔗 also commits as: <b>S Hamsalekha</b></sub>
       </td>
       <td valign="top" width="*">
-        <h4>25. Track User Progress</h4>
+        <h4>26. Track User Progress</h4>
         <ul>
           <li>📊 <b>Track User Progress (PR #77)</b> — per-user attempt log, progress timeline, mastery milestones</li>
           <li>🗂️ <b><code>StudentAttemptLog</code></b> model in MongoDB for fine-grained analytics</li>
@@ -716,18 +740,18 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
   <table>
     <tr>
       <td align="center" width="220">
-        <a href="https://github.com/KrishnaG-101"><img src="https://avatars.githubusercontent.com/u/155518412?v=4&s=120" width="120" style="border-radius:50%; border:3px solid #27AE60;" alt="Krishna Gelra"/></a>
-        <br/><b>Krishna Gelra</b>
-        <br/><a href="https://github.com/KrishnaG-101">@KrishnaG-101</a>
-        <br/><sub>🏆 3 commits · 1 PR merged</sub>
+        <a href="https://github.com/disha-singh"><img src="https://github.com/disha-singh.png?size=120&s=120" width="120" style="border-radius:50%; border:3px solid #888888;" alt="disha-singh"/></a>
+        <br/><b>disha-singh</b>
+        <br/><a href="https://github.com/disha-singh">@disha-singh</a>
+        <br/><sub>🏆 2 commits · 0 PRs merged</sub>
+        <br/><sub>🔗 also commits as: <b>Disha Singh</b></sub>
       </td>
       <td valign="top" width="*">
-        <h4>26. Language Puzzles Framework</h4>
+        <h4>27. New Contributor</h4>
         <ul>
-          <li>🧩 <b>Modular Language Puzzles framework (PR #35)</b> — pluggable architecture for word/letter puzzles</li>
-          <li>🆕 <b>Word Creator</b> — fill-in-the-blanks to create new words</li>
-          <li>⚡ <b>Latency optimization</b> — reduced <code>wordCreator</code> verification time</li>
-          <li>🔀 <b>Merge conflict resolution</b> — clean upstream merge</li>
+          <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
+          <li>📊 <b>2 commits</b> across this repo's history</li>
+          <li>🔗 <i>Add a <code>FALLBACK_PROFILES</code> entry in <code>scripts/update-readme-contributors.js</code> to enrich this card with real name, avatar, location, and curated feature list</i></li>
         </ul>
       </td>
     </tr>
@@ -744,7 +768,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>🏆 2 commits · 1 PR merged</sub>
       </td>
       <td valign="top" width="*">
-        <h4>27. New Contributor</h4>
+        <h4>28. New Contributor</h4>
         <ul>
           <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
           <li>📊 <b>2 commits</b> across this repo's history</li>
@@ -766,7 +790,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>🔗 also commits as: <b>Harsh</b></sub>
       </td>
       <td valign="top" width="*">
-        <h4>28. New Contributor</h4>
+        <h4>29. New Contributor</h4>
         <ul>
           <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
           <li>📊 <b>2 commits</b> across this repo's history</li>
@@ -788,7 +812,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>📍 india · 🌐 anshulkanodia.me</sub>
       </td>
       <td valign="top" width="*">
-        <h4>29. Geometry Game Restoration</h4>
+        <h4>30. Geometry Game Restoration</h4>
         <ul>
           <li>🔺 <b>Re-added Geometry Game (PR #8)</b> — restored the 20-July geometry game after it was lost in a merge</li>
           <li>🔀 <b>Upstream merge integration</b> for <code>patnaikArpita/Re-added-geometry-game-20July</code></li>
@@ -809,7 +833,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>🔗 also commits as: <b>JINAL GUPTA</b></sub>
       </td>
       <td valign="top" width="*">
-        <h4>30. New Contributor</h4>
+        <h4>31. New Contributor</h4>
         <ul>
           <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
           <li>📊 <b>1 commits</b> across this repo's history</li>
@@ -831,7 +855,29 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>🔗 also commits as: <b>Athira Kv</b></sub>
       </td>
       <td valign="top" width="*">
-        <h4>31. New Contributor</h4>
+        <h4>32. New Contributor</h4>
+        <ul>
+          <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
+          <li>📊 <b>1 commits</b> across this repo's history</li>
+          <li>🔗 <i>Add a <code>FALLBACK_PROFILES</code> entry in <code>scripts/update-readme-contributors.js</code> to enrich this card with real name, avatar, location, and curated feature list</i></li>
+        </ul>
+      </td>
+    </tr>
+  </table>
+</p>
+
+<p align="center">
+  <table>
+    <tr>
+      <td align="center" width="220">
+        <a href="https://github.com/code-zero07"><img src="https://github.com/code-zero07.png?size=120&s=120" width="120" style="border-radius:50%; border:3px solid #888888;" alt="code-zero07"/></a>
+        <br/><b>code-zero07</b>
+        <br/><a href="https://github.com/code-zero07">@code-zero07</a>
+        <br/><sub>🏆 1 commits · 0 PRs merged</sub>
+        <br/><sub>🔗 also commits as: <b>Code-Zero07</b></sub>
+      </td>
+      <td valign="top" width="*">
+        <h4>33. New Contributor</h4>
         <ul>
           <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
           <li>📊 <b>1 commits</b> across this repo's history</li>
@@ -853,7 +899,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>🔗 also commits as: <b>Garv Arora</b></sub>
       </td>
       <td valign="top" width="*">
-        <h4>32. New Contributor</h4>
+        <h4>34. New Contributor</h4>
         <ul>
           <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
           <li>📊 <b>1 commits</b> across this repo's history</li>
@@ -875,7 +921,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>🔗 also commits as: <b>Pradeep Gupta</b></sub>
       </td>
       <td valign="top" width="*">
-        <h4>33. New Contributor</h4>
+        <h4>35. New Contributor</h4>
         <ul>
           <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
           <li>📊 <b>1 commits</b> across this repo's history</li>
@@ -897,7 +943,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>🔗 also commits as: <b>Priyanshu Kumar</b></sub>
       </td>
       <td valign="top" width="*">
-        <h4>34. New Contributor</h4>
+        <h4>36. New Contributor</h4>
         <ul>
           <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
           <li>📊 <b>1 commits</b> across this repo's history</li>
@@ -918,7 +964,7 @@ _Live data — last regenerated 2026-09-07 · auto-refreshed by [`github-actions
         <br/><sub>🏆 1 commits · 0 PRs merged</sub>
       </td>
       <td valign="top" width="*">
-        <h4>35. Infra contributor</h4>
+        <h4>37. Infra contributor</h4>
         <ul>
           <li>🔧 <b>Single administrative / infrastructure commit</b> to the project</li>
           <li>📧 <i>Email was private — no public GitHub profile linked</i></li>
