@@ -138,8 +138,8 @@ It is built to run on a single VPS — `tenali.fun` — with one Node process se
       <td align="center"><b>103</b><br/><sub>PRs merged</sub></td>
       <td align="center"><b>41</b><br/><sub>GitHub contributors</sub></td>
       <td align="center"><b>⭐ 7</b><br/><sub>stars</sub></td>
-      <td align="center"><b>🍴 77</b><br/><sub>forks</sub></td>
-      <td align="center"><b>🐛 129</b><br/><sub>open issues</sub></td>
+      <td align="center"><b>🍴 78</b><br/><sub>forks</sub></td>
+      <td align="center"><b>🐛 138</b><br/><sub>open issues</sub></td>
     </tr>
   </table>
 </p>
