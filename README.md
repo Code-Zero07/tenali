@@ -770,6 +770,12 @@ _Live data — last regenerated 2026-09-15 · auto-refreshed by [`github-actions
 
 > ⚠️ **You are reading the README of [`vicharanashala/tenali`](https://github.com/vicharanashala/tenali) — the canonical upstream repo, where all PRs land.** If you found this file inside a personal fork (e.g. someone's `Tenali_123`), the same rule applies from there: fork `vicharanashala/tenali` and open your PR back against it — direct pushes to a personal fork aren't reviewed and won't ship.
 
+**Before you open a PR, four rules that get a PR rejected without review — full detail in [`CONTRIBUTING.md`](CONTRIBUTING.md):**
+1. It must close an issue already listed on the tracker — nothing self-invented.
+2. Its description must include `Closes #N`.
+3. It must be conflict-free against `main`.
+4. It must never render hardcoded/fallback data as if it were live production data ([FLN #449](https://github.com/vicharanashala/fln/issues/449) is the reference example of why).
+
 **Step-by-step fork-first workflow (upstream → your fork → PR back):**
 
 ```bash

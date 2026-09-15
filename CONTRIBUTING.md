@@ -6,9 +6,9 @@ We welcome contributions from everyone, whether it's fixing a bug, adding a new 
 
 ## How to Contribute
 
-### 1. Reporting Bugs & Suggesting Features
-- Please check the existing issues to ensure someone hasn't already reported the same issue or suggested the same feature.
-- Open a new issue outlining the problem or feature, including as much detail as possible.
+### 1. Work only from issues already listed on the repo
+
+**Do not open a PR for something you thought of yourself — every PR must close an issue that already exists on the tracker.** If you've spotted a bug or have a feature idea that isn't filed yet, open an issue describing it and wait for it to be scoped before writing any code. A PR that isn't tied to a listed issue will be rejected regardless of how good the change is — this isn't a judgment call on the code, it's a process rule everyone is held to equally.
 
 ### 2. Making Changes
 - **Fork the repository** and clone it locally.
@@ -26,7 +26,10 @@ There is no `npm run format` or root-level `npm run build`/`npm run test` in thi
 ### 4. Submitting a Pull Request
 - Push your branch to your fork.
 - Open a Pull Request against the `main` branch.
+- **Your PR description must include `Closes #N`**, referencing the issue this PR addresses (see §1) — a PR without this link will be rejected.
 - Describe what changed and why; add screenshots if your changes affect the UI. (There is currently no `.github/PULL_REQUEST_TEMPLATE.md` in this repo, so there's no checklist to fill out — just a clear description.)
+- **Keep your branch mergeable.** Any PR with a merge conflict against `main` is an automatic rejection — this is not reviewed for exceptions, resolve the conflict and push again.
+- **Never render hardcoded/fallback data as if it were live production data** — if an API call fails or returns empty, show a real loading, error, or empty state instead of silently substituting placeholder records. (See [FLN #449](https://github.com/vicharanashala/fln/issues/449) for a concrete example of exactly this failure mode and why it's an automatic finding, not a style preference.)
 - Wait for a maintainer to review your code. We may request some changes before merging!
 - **New contributors:** submit the [Onboarding Document](README.md#-contributor-onboarding-mandatory) to `Ideas/` before your first PR — see the README for the required sections.
 
