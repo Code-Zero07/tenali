@@ -19,9 +19,51 @@
 ---
 
 <!-- live-changelog:start -->
-### 📊 Total: 1031 commits · 74 active days · 41 unique authors
+### 📊 Total: 1048 commits · 75 active days · 41 unique authors
 
 > **📖 How to read this:** Each entry shows a clickable SHA, the author, and a one-line subject. Sub-bullets show the **exact files touched** with per-file `+additions −deletions`, the **total line stats**, and (when present) the **commit body** explaining what & why.
+
+#### 📅 2026-09-15  <sub>(17 commits)</sub>
+
+- 📌 [`749cde07`](https://github.com/vicharanashala/tenali/commit/749cde07749ee3b0956b4bf327016a699da7a606) — **jgupta05072003-code** — 🔀 PR [#319](https://github.com/vicharanashala/tenali/pull/319) from `vicharanashala` — fix/stale-check-mergeable-null
+- 🐛 [`b2a9a5aa`](https://github.com/vicharanashala/tenali/commit/b2a9a5aa252fe64b78835553c7fa44e7d68df84a) — **JINAL GUPTA** — don't silently treat unresolved mergeable status as no-conflict
+    - 📁 **1 file:** `.github/scripts/parikshak-stale-check.js` `+25 −4`
+    - 📊 **`+25 −4`** · 1 file
+- 📌 [`dac89c14`](https://github.com/vicharanashala/tenali/commit/dac89c143775f12eb4cbbe06159ebc11cee5f2e1) — **jgupta05072003-code** — 🔀 PR [#318](https://github.com/vicharanashala/tenali/pull/318) from `vicharanashala` — feat/pr-gate-check-bot
+- ✨ [`e9afa0f8`](https://github.com/vicharanashala/tenali/commit/e9afa0f88f605a56a5c7f9794790761ae03336f0) — **JINAL GUPTA** — detailed, per-check logging in the Actions run for both workflows
+    - 📁 **2 files:** `.github/scripts/parikshak-stale-check.js` `+26 −11`, `.github/scripts/pr-gate-check.js` `+23 −1`
+    - 📊 **`+49 −12`** · 2 files
+- 📌 [`35864bcf`](https://github.com/vicharanashala/tenali/commit/35864bcf09bbdbcf71338e45c8cee94bb751bafd) — **jgupta05072003-code** — 🔀 PR [#317](https://github.com/vicharanashala/tenali/pull/317) from `vicharanashala` — feat/pr-gate-check-bot
+- ✨ [`dd494109`](https://github.com/vicharanashala/tenali/commit/dd4941094f726a061c02c0b71527f1f960057504) — **JINAL GUPTA** — log a per-PR summary line on every stale-check run
+    - 📁 **1 file:** `.github/scripts/parikshak-stale-check.js` `+28 −2`
+    - 📊 **`+28 −2`** · 1 file
+- ✨ [`50acba6e`](https://github.com/vicharanashala/tenali/commit/50acba6e65297cc619fee7668758c8caf9766fa5) — **JINAL GUPTA** — allow manual testing of pr-gate-check via workflow_dispatch
+    - 📁 **2 files:** `.github/scripts/pr-gate-check.js` `+14 −2`, `.github/workflows/pr-gate-check.yml` `+5 −0`
+    - 📊 **`+19 −2`** · 2 files
+- 📌 [`4cb4a6f9`](https://github.com/vicharanashala/tenali/commit/4cb4a6f9323d11397b6d8650bab1ea76fd89b576) — **jgupta05072003-code** — 🔀 PR [#316](https://github.com/vicharanashala/tenali/pull/316) from `vicharanashala` — feat/pr-gate-check-bot
+- 📌 [`f13c6fa2`](https://github.com/vicharanashala/tenali/commit/f13c6fa2b17b9c3bed1e0a8cf12f0dd36f96cd0b) — **jgupta05072003-code** — 🔀 PR [#315](https://github.com/vicharanashala/tenali/pull/315) from `vicharanashala` — docs/pr-sop-rules-252
+- ✨ [`478929d9`](https://github.com/vicharanashala/tenali/commit/478929d9a8f9ab6f3c090a5dbdaa136ebab7fd0e) — **JINAL GUPTA** — add Parikshak's 48-hour stale-PR auto-close job
+    - 📁 **3 files:** `.github/scripts/parikshak-stale-check.js` `+135 −0`, `.github/scripts/pr-gate-check.js` `+8 −5`, `.github/workflows/parikshak-stale-check.yml` `+31 −0`
+    - 📊 **`+174 −5`** · 3 files
+- 📝 [`07be87fe`](https://github.com/vicharanashala/tenali/commit/07be87fe1c3ea7933ff3fe5ed7b394ec14dec8de) — **JINAL GUPTA** — rename the bot to Parikshak
+    - 📁 **2 files:** `.github/scripts/pr-gate-check.js` `+7 −7`, `.github/workflows/pr-gate-check.yml` `+1 −1`
+    - 📊 **`+8 −8`** · 2 files
+- 📝 [`6b162705`](https://github.com/vicharanashala/tenali/commit/6b162705a6b2b7c3c11d5bdc3d6d84c934fd343b) — **JINAL GUPTA** — name the bot Sipmap
+    - 📁 **2 files:** `.github/scripts/pr-gate-check.js` `+7 −7`, `.github/workflows/pr-gate-check.yml` `+1 −1`
+    - 📊 **`+8 −8`** · 2 files
+- ✨ [`30382e63`](https://github.com/vicharanashala/tenali/commit/30382e63fd3ec1b3c21908e16a201f3d0ccb2ee5) — **JINAL GUPTA** — add comment-only PR gate check bot (v1, deterministic checks only)
+    - 📁 **2 files:** `.github/scripts/pr-gate-check.js` `+144 −0`, `.github/workflows/pr-gate-check.yml` `+36 −0`
+    - 📊 **`+180 −0`** · 2 files
+- 📝 [`a271ec6b`](https://github.com/vicharanashala/tenali/commit/a271ec6b99880b9d973477d06611bedc19e0f40c) — **JINAL GUPTA** — state the agreed contribution rules in CONTRIBUTING.md and README
+    - 📁 **2 files:** `CONTRIBUTING.md` `+6 −3`, `README.md` `+6 −0`
+    - 📊 **`+12 −3`** · 2 files
+- 📌 [`4d93328a`](https://github.com/vicharanashala/tenali/commit/4d93328abeac5ca3aca3f971edc3b8f509e30afd) — **jgupta05072003-code** — 🔀 PR [#314](https://github.com/vicharanashala/tenali/pull/314) from `vicharanashala` — docs/readme-contributing-accuracy-refresh
+- 📝 [`44efdba8`](https://github.com/vicharanashala/tenali/commit/44efdba88f61347c8c342f9727e973a2556fc646) — **JINAL GUPTA** — state the modular-file requirement explicitly, not just for puzzles
+    - 📁 **1 file:** `README.md` `+1 −1`
+    - 📊 **`+1 −1`** · 1 file
+- 📝 [`57b55a53`](https://github.com/vicharanashala/tenali/commit/57b55a537c0d739a48619470b8617c39bfa40e44) — **JINAL GUPTA** — fix README/CONTRIBUTING inaccuracies and stale puzzle counts
+    - 📁 **3 files:** `CONTRIBUTING.md` `+9 −7`, `README.md` `+27 −30`, `scripts/update-readme-contributors.js` `+1 −1`
+    - 📊 **`+37 −38`** · 3 files
 
 #### 📅 2026-09-12  <sub>(16 commits)</sub>
 
