@@ -76,14 +76,27 @@ module.exports = async ({ github, context, core }) => {
     const prNumber = prSummary.number;
     core.startGroup(`Parikshak stale check — PR #${prNumber}: ${prSummary.title}`);
 
-    const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+    let { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+
+    // `mergeable` is null until GitHub finishes computing it -- and fetching a
+    // PR that hasn't been touched in a while is exactly what kicks that
+    // computation off, so the FIRST read after a lull is very often null.
+    // One retry resolves it in practice; if it's still null, treat it as
+    // genuinely unknown rather than silently reading that as "no conflict".
+    if (pr.mergeable === null) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const { data: refetched } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+      pr = refetched;
+    }
 
     const reviews = await github.paginate(github.rest.pulls.listReviews, { owner, repo, pull_number: prNumber, per_page: 100 });
     const latestDecisive = [...reviews].reverse().find((r) => r.state === 'CHANGES_REQUESTED' || r.state === 'APPROVED');
     const reviewActive = !!latestDecisive && latestDecisive.state === 'CHANGES_REQUESTED' && latestDecisive.commit_id === pr.head.sha;
 
-    const active = { conflict: pr.mergeable === false, review: reviewActive };
-    core.info(`Check 1/2 — ${CLOCK_LABELS.conflict}: ${active.conflict ? 'CURRENTLY ACTIVE' : 'clear'} (mergeable=${pr.mergeable}).`);
+    // conflict is true/false/null (null = still unknown after the retry --
+    // leave that clock's state alone this run rather than guessing).
+    const active = { conflict: pr.mergeable === null ? null : pr.mergeable === false, review: reviewActive };
+    core.info(`Check 1/2 — ${CLOCK_LABELS.conflict}: ${active.conflict === null ? 'UNKNOWN (GitHub has not computed mergeability yet)' : active.conflict ? 'CURRENTLY ACTIVE' : 'clear'} (mergeable=${pr.mergeable}).`);
     core.info(
       `Check 2/2 — ${CLOCK_LABELS.review}: ${active.review ? 'CURRENTLY ACTIVE' : 'clear'}` +
       (latestDecisive ? ` (latest decisive review: ${latestDecisive.state} at commit ${latestDecisive.commit_id.slice(0, 7)}, PR head is now ${pr.head.sha.slice(0, 7)}).` : ' (no CHANGES_REQUESTED/APPROVED review found).')
@@ -100,8 +113,16 @@ module.exports = async ({ github, context, core }) => {
       const sinceKey = `${clock.key}Since`;
       const warnedKey = `${clock.key}WarnedAt`;
       const label = CLOCK_LABELS[clock.key];
+      const clockActive = active[clock.key];
 
-      if (!active[clock.key]) {
+      if (clockActive === null) {
+        // Genuinely unknown this run (e.g. mergeable still computing) --
+        // don't advance the clock, but don't clear it either.
+        core.info(`  -> "${label}" clock left untouched (status unknown this run).`);
+        continue;
+      }
+
+      if (!clockActive) {
         if (state[sinceKey]) core.info(`  -> "${label}" clock cleared (condition resolved since last run).`);
         delete state[sinceKey];
         delete state[warnedKey];
