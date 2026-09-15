@@ -11,7 +11,7 @@
   <a href="https://github.com/vicharanashala/tenali/stargazers"><img src="https://img.shields.io/github/stars/vicharanashala/tenali?style=for-the-badge&logo=github&color=FFD93D" alt="Stars"/></a>
   <a href="https://github.com/vicharanashala/tenali/network/members"><img src="https://img.shields.io/github/forks/vicharanashala/tenali?style=for-the-badge&logo=github&color=6BCB77" alt="Forks"/></a>
   <a href="https://github.com/vicharanashala/tenali/issues"><img src="https://img.shields.io/github/issues/vicharanashala/tenali?style=for-the-badge&logo=github&color=FF6B6B" alt="Issues"/></a>
-  <a href="CONTRIBUTORS.md"><img src="https://img.shields.io/badge/Contributors-20-4D96FF?style=for-the-badge&logo=github" alt="Contributors"/></a>
+  <a href="CONTRIBUTORS.md"><img src="https://img.shields.io/github/contributors/vicharanashala/tenali?style=for-the-badge&logo=github&color=4D96FF" alt="Contributors"/></a>
 </p>
 
 <p>
@@ -26,7 +26,7 @@
 
 ---
 
-### ✨ **69 math topics · Algorithmically generated · Adaptive difficulty · Live multiplayer · Step-by-step solutions**
+### ✨ **93 puzzle types across 69 topic areas · Algorithmically generated · Adaptive difficulty · Live multiplayer · Step-by-step solutions**
 
 </div>
 ## 🧠 Pedagogical Features: Progressive & Interactive Learning
@@ -85,6 +85,7 @@ Learning content remains separated from UI logic:
 
 ```text
 Learning JSON → learnContent.js → Learning Page → Interactive Components
+```
 
 ## 📑 Table of Contents
 
@@ -102,7 +103,7 @@ Learning JSON → learnContent.js → Learning Page → Interactive Components
 
 **🧠 Capabilities**
 - [🚀 Features in Depth](#-features-in-depth)
-- [🛠️ The 69 Puzzle Types](#-the-69-puzzle-types)
+- [🛠️ The Puzzle Types](#-the-puzzle-types)
 - [🏗️ Architecture](#-architecture)
 
 </td>
@@ -122,7 +123,9 @@ Learning JSON → learnContent.js → Learning Page → Interactive Components
 
 ## 🌟 What is Tenali?
 
-Tenali (named after the legendary **Tenali Raman** — the witty Indian scholar who outwitted entire courts with logic) is an **adaptive math learning platform** featuring 69 algorithmically-generated puzzle types, real-time multiplayer battles, and step-by-step solutions for every problem. Every question is generated on the fly — there is no question database — so practice is infinite and never repeats. Difficulty adapts to each learner in real time.
+Tenali (named after the legendary **Tenali Raman** — the witty Indian scholar who outwitted entire courts with logic) is an **adaptive math learning platform** featuring algorithmically-generated puzzle types, real-time multiplayer battles, and step-by-step solutions for every problem. Every question is generated on the fly — there is no question database — so practice is infinite and never repeats. Difficulty adapts to each learner in real time.
+
+There isn't one canonical "puzzle count" — different parts of the codebase group content differently, and that's worth naming instead of collapsing into a single number: the server exposes **93 distinct `*-api` route pairs** (the real unit of "a puzzle type"), grouped under **69 topic areas** in the `/graph` prerequisite map, and the home-screen tile registry (`client/src/features/tiles.js`) lists **100+ tiles**, because several route pairs surface as more than one tile (e.g. an MCQ "gym" drill and a full-form drill on the same topic, via `foldInto`). Use whichever number matches what you're actually counting.
 
 It is built to run on a single VPS — `tenali.fun` — with one Node process serving the React app, the puzzle APIs, the JWT auth, the Socket.IO Battle Arena, and the multi-language code playground.
 
@@ -305,7 +308,7 @@ JWT auth with **fail-fast** in production, `express-rate-limit`, CORS allowlist,
 
 ---
 
-## 🛠️ The 69 Puzzle Types
+## 🛠️ The Puzzle Types
 
 > Every puzzle has the same two-route contract: `GET /<type>-api/question` and `POST /<type>-api/check`. To fetch a step-by-step explanation, set `{ solve: true }` in the POST body.
 
@@ -477,7 +480,8 @@ JWT auth with **fail-fast** in production, `express-rate-limit`, CORS allowlist,
 │         └────────────┬────┴────────────┬────┘                   │
 │                      ▼                 ▼                         │
 │  ┌──────────────────────────────────────────────────────┐        │
-│  │   69 puzzle routers (GET ?question, POST ?check)     │        │
+│  │  93 puzzle routes, grouped into router modules under │        │
+│  │  server/routes/ (GET ?question, POST ?check)         │        │
 │  └──────┬───────────────────────────────────────────────┘        │
 │         │                                                        │
 │  ┌──────▼───────────────────────────────────────────────┐        │
@@ -518,13 +522,6 @@ JWT auth with **fail-fast** in production, `express-rate-limit`, CORS allowlist,
 # Option A — clone the canonical upstream (recommended for fresh installs)
 git clone https://github.com/vicharanashala/tenali.git
 cd tenali
-
-
-### Install
-
-```bash
-cd server && npm install
-cd ../client && npm install
 ```
 
 ### Install
@@ -575,13 +572,13 @@ cd client && npm run lint
 
 ## 🧩 Add a New Puzzle
 
-Five-step recipe:
+> ⚠️ **New code goes in modular, per-feature files — not into `client/src/App.jsx` or `server/index.js`.** Both used to be one-file-does-everything monoliths (`App.jsx` is still 70,000+ lines and the single biggest source of PR merge conflicts, tracked in [issue #181](https://github.com/vicharanashala/tenali/issues/181)); the server side has already been split into `server/routes/*.js` and `client/src/features/tiles.js`, and that split — one puzzle/feature per file, registered through a small data table rather than by editing a shared file — is the pattern for everything new, not just puzzles. If a step below tells you to add to a specific module instead of a monolith, that's this rule in practice.
 
-1. **Server** — Add `GET /<type>-api/question` and `POST /<type>-api/check` in `server/index.js`. Difficulty (0 – 3) drives parameter ranges.
+1. **Server route** — Add `GET /<type>-api/question` and `POST /<type>-api/check` in the matching group file under [`server/routes/`](server/routes/) (e.g. `algebra.js`, `geometry.js`) rather than `server/index.js` — the routes were extracted out of the monolith into these grouped router modules. Difficulty (0 – 3) drives parameter ranges.
 2. **Proxy** — Add the new prefix to `client/vite.config.js` proxy list.
-3. **Component** — Build a quiz component with the `makeQuizApp({ title, apiPath, diffLabels, placeholders, answerField })` factory in `client/src/App.jsx`.
-4. **Register** — Map the key in `modeMap` and add an entry to `regularApps` for the home grid.
-5. **Explain** — Add a `case` to `generateExplanation()` so the Solve button works.
+3. **Home-screen tile** — Add `{ key, name, subtitle, color, category }` to the registry in [`client/src/features/tiles.js`](client/src/features/tiles.js) — **not** `regularApps` in `App.jsx`. `category` should be one of the existing buckets (`number-foundations`, `shape-space`, `algebra`, `calculus`, `linear-algebra`, `everyday-maths`, `data-chance`, or `shelf` for non-topic features); this is the data [issue #201](https://github.com/vicharanashala/tenali/issues/201) and the rest of the home-grid restructuring plan will read from once the grid actually renders by bucket (today it still renders flat). If your puzzle is a drill variant of an existing tile (e.g. an MCQ "gym" version), set `foldInto: '<parent-key>'` instead of adding a new top-level tile.
+4. **Component** — Build the quiz component with the `makeQuizApp({ title, apiPath, diffLabels, placeholders, answerField })` factory. `modeMap` (the key → component mapping) still lives inline in `App.jsx` — it hasn't been extracted yet ([issue #199](https://github.com/vicharanashala/tenali/issues/199)) because its values are components defined throughout the file, not plain data. Add your entry there, but keep the change to that one line; don't restructure anything else in the file.
+5. **Explain** — Add a `case` to `generateExplanation()` in [`server/explanations.js`](server/explanations.js) so the Solve button works.
 
 ---
 
@@ -661,16 +658,18 @@ A reviewer will check the Onboarding Document against the following:
 
 ## 🌐 Deployment Topology
 
+`tenali.fun` is **not one deployment of this repo** — it's one nginx host fronting three separately-running apps on one server, each on its own port and systemd unit:
+
 ```
-tenali.fun (DNS → <production IP — redacted from public docs>)
-  └── Nginx (SSL via Let's Encrypt)
-        └── proxy_pass http://127.0.0.1:4000
-              └── tenali.service (systemd, runs as tenali user)
-                    └── node /home/tenali/tenali/server/index.js
+tenali.fun
+  ├── /            → tenali-root branch (separate branch, PR + maintainer merge required — no direct pushes)
+  ├── /summership/ → THIS REPO's `main` branch  ← PRs from this README land here
+  └── /fln/        → vicharanashala/fln (a different repo entirely)
 ```
 
-> 🔒 **Security note:** The droplet IP, SSH host, and admin SSH credentials live only in
-> GitHub Actions secrets (`SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`) — never committed to source.
+**If you merge a PR to `main` here, it goes live at `tenali.fun/summership/`, not at the bare `tenali.fun` domain.** The root path is a separate branch (`tenali-root`) with its own PR-and-merge workflow — see that branch's own docs before touching it.
+
+> 🔒 **Security note:** The droplet IP, SSH host, and admin SSH credentials are never committed to source — they live only in server-side systemd unit files and deploy tooling outside this repo.
 
 ---
 
@@ -691,7 +690,7 @@ tenali.fun (DNS → <production IP — redacted from public docs>)
 <!-- live-snapshot:start -->
 | 🏆 Commits | 🔀 Merged PRs | 👥 Contributors | 🧩 Puzzles | 📚 Vocab | 🌍 GK |
 |----------:|------------:|--------------:|---------:|-------:|----:|
-| **1031** | **103** | **41** | **69** | **7,662** | **991** |
+| **1031** | **103** | **41** | **93** | **7,662** | **991** |
 <!-- live-snapshot:end -->
 
 ### 🥇 Leaderboard
@@ -769,9 +768,7 @@ _Live data — last regenerated 2026-09-15 · auto-refreshed by [`github-actions
 
 ### 🤝 How to become a contributor
 
-> ⚠️ **The canonical upstream is [`vicharanashala/tenali`](https://github.com/vicharanashala/tenali) — that's where all PRs land.**
->
-> This repo (`muditagrawal2007/Tenali_123`) is a **personal fork**, not the canonical main repo. To contribute, please fork `vicharanashala/tenali` and open your PR there — direct pushes to this fork are not reviewed.
+> ⚠️ **You are reading the README of [`vicharanashala/tenali`](https://github.com/vicharanashala/tenali) — the canonical upstream repo, where all PRs land.** If you found this file inside a personal fork (e.g. someone's `Tenali_123`), the same rule applies from there: fork `vicharanashala/tenali` and open your PR back against it — direct pushes to a personal fork aren't reviewed and won't ship.
 
 **Step-by-step fork-first workflow (upstream → your fork → PR back):**
 
@@ -817,7 +814,7 @@ git push origin feat/amazing
 
 Every merged PR bumps your spot in the leaderboard 🏅
 
-> 💡 Already forked `muditagrawal2007/Tenali_123`? You can re-target your fork:
+> 💡 Already have a fork pointed at a different, older fork instead of `vicharanashala/tenali`? Re-target it:
 > `Settings → General → Redirect this repository to vicharanashala/tenali`.
 
 ---

@@ -12,21 +12,23 @@ We welcome contributions from everyone, whether it's fixing a bug, adding a new 
 
 ### 2. Making Changes
 - **Fork the repository** and clone it locally.
-- **Create a branch** for your changes (e.g., `feature/add-new-quiz-mode` or `fix/login-bug`).
+- **Create a branch** for your changes, named `<type>/<short-description>` — `feat/add-new-quiz-mode` or `fix/login-bug`, not `feature/...` (see the [README's branch table](README.md#-quick-start) for the full list of prefixes actually in use: `feat`, `fix`, `chore`, `docs`, `refactor`).
 - **Make your changes**. Ensure your code is clean and readable.
 
 ### 3. Quality Checks
-To ensure a high standard of code, please run the following checks before opening a pull request:
-- **Linting:** Run `npm run lint` to catch potential bugs and enforce code style.
-- **Formatting:** Run `npm run format` to automatically format your code using Prettier.
-- **Build:** Run `npm run build` to verify the client builds successfully.
-- **Tests:** Run `npm run test` to ensure tests pass.
+These are what CI actually runs on every PR (see `.github/workflows/test.yml`) — matching them locally means you're not surprised by a red check:
+- **Client lint:** `cd client && npm run lint` (currently non-blocking in CI until `App.jsx` is split up — but please still run it and fix what you introduce).
+- **Server tests:** `cd server && npm test`.
+- **BKT unit check:** `node server/lib/bkt.test.js`.
+
+There is no `npm run format` or root-level `npm run build`/`npm run test` in this repo — don't rely on tooling docs that assume a single unified script at the root; `client/` and `server/` are separate npm packages with their own scripts.
 
 ### 4. Submitting a Pull Request
 - Push your branch to your fork.
 - Open a Pull Request against the `main` branch.
-- Fill out the provided **Pull Request Template**, checking all the boxes and adding screenshots if your changes affect the UI.
+- Describe what changed and why; add screenshots if your changes affect the UI. (There is currently no `.github/PULL_REQUEST_TEMPLATE.md` in this repo, so there's no checklist to fill out — just a clear description.)
 - Wait for a maintainer to review your code. We may request some changes before merging!
+- **New contributors:** submit the [Onboarding Document](README.md#-contributor-onboarding-mandatory) to `Ideas/` before your first PR — see the README for the required sections.
 
 ## Core Maintainers & Interns
 If you are joining as a dedicated intern or a core maintainer, please refer to the `docs/` directory in this repository for more in-depth guidelines, RFC templates, and project standards.

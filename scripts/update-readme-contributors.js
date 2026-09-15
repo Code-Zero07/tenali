@@ -814,7 +814,7 @@ function renderSnapshot(totals) {
   return [
     '| 🏆 Commits | 🔀 Merged PRs | 👥 Contributors | 🧩 Puzzles | 📚 Vocab | 🌍 GK |',
     '|----------:|------------:|--------------:|---------:|-------:|----:|',
-    `| **${totals.totalCommits}** | **${totals.totalPRs}** | **${Object.keys(byLogin).length || 16}** | **69** | **7,662** | **991** |`,
+    `| **${totals.totalCommits}** | **${totals.totalPRs}** | **${Object.keys(byLogin).length || 16}** | **93** | **7,662** | **991** |`,
   ].join('\n');
 }
 
