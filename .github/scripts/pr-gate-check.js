@@ -1,11 +1,14 @@
 // Parikshak — deterministic, comment-only PR gate check bot.
 //
 // Runs entirely on GitHub's own runners via actions/github-script (no external
-// hosting). It never approves, closes, or requests changes on a PR — it only
-// posts (or edits) a single comment describing which gates pass and fail.
-// A human always makes the final call. See ~/Desktop/PR_REVIEW_AUTOMATION_SOP.md
-// for why: the fabricated-data gate needs judgment and isn't included here by
-// design; this file only checks things a script can decide correctly every time.
+// hosting). This file never approves, closes, or requests changes on a PR — it
+// only posts (or edits) a single comment describing which gates pass and fail.
+// The one place Parikshak *can* close a PR is the separate scheduled job in
+// parikshak-stale-check.js (48h-unresolved-conflict / unaddressed-changes-
+// requested only) — this file is not that job and stays comment-only.
+// See ~/Desktop/PR_REVIEW_AUTOMATION_SOP.md for the full policy: the
+// fabricated-data gate needs judgment and isn't included here by design;
+// this file only checks things a script can decide correctly every time.
 //
 // Shared byte-for-byte between vicharanashala/fln and vicharanashala/tenali —
 // don't fork it per repo; add repo-specific behavior via env vars in the
