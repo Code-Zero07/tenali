@@ -55,9 +55,17 @@ module.exports = async ({ github, context, core }) => {
   const now = Date.now();
 
   const prs = await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open', per_page: 100 });
+  core.info(`Parikshak stale check: scanning ${prs.length} open PR(s) in ${owner}/${repo}.`);
+
+  let skippedDrafts = 0;
+  let closedCount = 0;
+  let warnedCount = 0;
 
   for (const prSummary of prs) {
-    if (prSummary.draft) continue; // drafts are exempt by design
+    if (prSummary.draft) {
+      skippedDrafts++;
+      continue; // drafts are exempt by design
+    }
 
     const prNumber = prSummary.number;
     const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
@@ -100,6 +108,7 @@ module.exports = async ({ github, context, core }) => {
     }
 
     if (warnings.length > 0) {
+      warnedCount++;
       await github.rest.issues.createComment({
         owner,
         repo,
@@ -111,6 +120,7 @@ module.exports = async ({ github, context, core }) => {
     }
 
     if (closeReasons.length > 0) {
+      closedCount++;
       await github.rest.issues.createComment({
         owner,
         repo,
@@ -121,7 +131,6 @@ module.exports = async ({ github, context, core }) => {
           `Fix the issue above and open a fresh PR referencing the same \`Closes #N\` whenever you're ready.`,
       });
       await github.rest.pulls.update({ owner, repo, pull_number: prNumber, state: 'closed' });
-      core.info(`Parikshak: closed PR #${prNumber} (${closeReasons.join('; ')})`);
     }
 
     const hasState = Object.keys(state).length > 0;
@@ -131,5 +140,22 @@ module.exports = async ({ github, context, core }) => {
     } else if (hasState) {
       await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body: stateBody });
     }
+
+    // One line per PR, every run, regardless of outcome -- this is the audit
+    // trail: without it, a clean run (nothing warned or closed) leaves zero
+    // evidence in the Actions log that the PR was ever looked at.
+    const clockSummary = ['conflict', 'review']
+      .map((k) => `${k}=${active[k] ? (state[`${k}Since`] ? `active since ${new Date(state[`${k}Since`]).toISOString()}` : 'active') : 'clear'}`)
+      .join(', ');
+    core.info(
+      `PR #${prNumber}: ${clockSummary}` +
+      (warnings.length ? ' -> WARNED' : '') +
+      (closeReasons.length ? ' -> CLOSED' : '')
+    );
   }
+
+  core.info(
+    `Parikshak stale check summary for ${owner}/${repo}: ${prs.length} open PR(s), ` +
+    `${skippedDrafts} draft(s) skipped, ${warnedCount} warned, ${closedCount} closed.`
+  );
 };

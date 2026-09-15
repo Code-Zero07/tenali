@@ -24,8 +24,20 @@ const CLOSES_RE = /\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s*#(\d+)\b/gi;
  */
 module.exports = async ({ github, context, core }) => {
   const { owner, repo } = context.repo;
-  const pr = context.payload.pull_request;
-  const prNumber = pr.number;
+
+  // Real PR events carry the PR on the payload; a manual workflow_dispatch
+  // run (for testing) carries it as an input instead, so resolve either way
+  // and always fetch fresh data rather than trusting the event payload.
+  const prNumber = context.payload.pull_request
+    ? context.payload.pull_request.number
+    : Number(context.payload.inputs && context.payload.inputs.pr_number);
+
+  if (!prNumber) {
+    core.setFailed('No PR number available — run this on a pull_request_target event, or dispatch it manually with a pr_number input.');
+    return;
+  }
+
+  const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
 
   const findings = [];
 

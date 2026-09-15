@@ -7,6 +7,11 @@ name: Parikshak PR gate check
 on:
   pull_request_target:
     types: [opened, synchronize, reopened, edited]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to check (for manual testing)"
+        required: true
 
 permissions:
   pull-requests: write
