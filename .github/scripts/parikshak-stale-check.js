@@ -61,13 +61,21 @@ module.exports = async ({ github, context, core }) => {
   let closedCount = 0;
   let warnedCount = 0;
 
+  const CLOCK_LABELS = {
+    conflict: 'Unresolved merge conflict with the base branch',
+    review: 'CHANGES_REQUESTED review with no new commits since',
+  };
+
   for (const prSummary of prs) {
     if (prSummary.draft) {
       skippedDrafts++;
+      core.info(`PR #${prSummary.number}: skipped (draft).`);
       continue; // drafts are exempt by design
     }
 
     const prNumber = prSummary.number;
+    core.startGroup(`Parikshak stale check — PR #${prNumber}: ${prSummary.title}`);
+
     const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
 
     const reviews = await github.paginate(github.rest.pulls.listReviews, { owner, repo, pull_number: prNumber, per_page: 100 });
@@ -75,6 +83,11 @@ module.exports = async ({ github, context, core }) => {
     const reviewActive = !!latestDecisive && latestDecisive.state === 'CHANGES_REQUESTED' && latestDecisive.commit_id === pr.head.sha;
 
     const active = { conflict: pr.mergeable === false, review: reviewActive };
+    core.info(`Check 1/2 — ${CLOCK_LABELS.conflict}: ${active.conflict ? 'CURRENTLY ACTIVE' : 'clear'} (mergeable=${pr.mergeable}).`);
+    core.info(
+      `Check 2/2 — ${CLOCK_LABELS.review}: ${active.review ? 'CURRENTLY ACTIVE' : 'clear'}` +
+      (latestDecisive ? ` (latest decisive review: ${latestDecisive.state} at commit ${latestDecisive.commit_id.slice(0, 7)}, PR head is now ${pr.head.sha.slice(0, 7)}).` : ' (no CHANGES_REQUESTED/APPROVED review found).')
+    );
 
     const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: prNumber, per_page: 100 });
     const stateComment = comments.find((c) => c.body && c.body.includes(STATE_MARKER));
@@ -86,8 +99,10 @@ module.exports = async ({ github, context, core }) => {
     for (const clock of CLOCKS) {
       const sinceKey = `${clock.key}Since`;
       const warnedKey = `${clock.key}WarnedAt`;
+      const label = CLOCK_LABELS[clock.key];
 
       if (!active[clock.key]) {
+        if (state[sinceKey]) core.info(`  -> "${label}" clock cleared (condition resolved since last run).`);
         delete state[sinceKey];
         delete state[warnedKey];
         continue;
@@ -95,15 +110,21 @@ module.exports = async ({ github, context, core }) => {
 
       if (!state[sinceKey]) {
         state[sinceKey] = now; // clock starts this run
+        core.info(`  -> "${label}" clock started now.`);
         continue;
       }
 
       const elapsed = now - state[sinceKey];
+      const hoursElapsed = (elapsed / (60 * 60 * 1000)).toFixed(1);
       if (elapsed >= CLOSE_AFTER_MS) {
         closeReasons.push(clock.closeReason);
+        core.info(`  -> "${label}" clock at ${hoursElapsed}h — CLOSE THRESHOLD REACHED (48h).`);
       } else if (elapsed >= WARN_AFTER_MS && !state[warnedKey]) {
         state[warnedKey] = now;
         warnings.push(clock.warnText);
+        core.info(`  -> "${label}" clock at ${hoursElapsed}h — WARN THRESHOLD REACHED (24h).`);
+      } else {
+        core.info(`  -> "${label}" clock at ${hoursElapsed}h (warn at 24h, close at 48h).`);
       }
     }
 
@@ -141,21 +162,15 @@ module.exports = async ({ github, context, core }) => {
       await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body: stateBody });
     }
 
-    // One line per PR, every run, regardless of outcome -- this is the audit
-    // trail: without it, a clean run (nothing warned or closed) leaves zero
-    // evidence in the Actions log that the PR was ever looked at.
-    const clockSummary = ['conflict', 'review']
-      .map((k) => `${k}=${active[k] ? (state[`${k}Since`] ? `active since ${new Date(state[`${k}Since`]).toISOString()}` : 'active') : 'clear'}`)
-      .join(', ');
     core.info(
-      `PR #${prNumber}: ${clockSummary}` +
-      (warnings.length ? ' -> WARNED' : '') +
-      (closeReasons.length ? ' -> CLOSED' : '')
+      `Result: ${warnings.length ? 'WARNED' : ''}${closeReasons.length ? (warnings.length ? ' + CLOSED' : 'CLOSED') : ''}` +
+      (warnings.length || closeReasons.length ? '' : 'no action needed')
     );
+    core.endGroup();
   }
 
   core.info(
-    `Parikshak stale check summary for ${owner}/${repo}: ${prs.length} open PR(s), ` +
-    `${skippedDrafts} draft(s) skipped, ${warnedCount} warned, ${closedCount} closed.`
+    `Parikshak stale check summary for ${owner}/${repo}: ${prs.length} open PR(s) total, ` +
+    `${skippedDrafts} draft(s) skipped, ${prs.length - skippedDrafts} checked, ${warnedCount} warned, ${closedCount} closed.`
   );
 };
