@@ -572,7 +572,7 @@ cd client && npm run lint
 
 ## 🧩 Add a New Puzzle
 
-> ⚠️ **`client/src/App.jsx` is a 70,000+ line file and the single biggest source of PR merge conflicts** (tracked in [issue #181](https://github.com/vicharanashala/tenali/issues/181)). Route and registry code has already moved out of it — don't add new code to `App.jsx` if the step below tells you not to.
+> ⚠️ **New code goes in modular, per-feature files — not into `client/src/App.jsx` or `server/index.js`.** Both used to be one-file-does-everything monoliths (`App.jsx` is still 70,000+ lines and the single biggest source of PR merge conflicts, tracked in [issue #181](https://github.com/vicharanashala/tenali/issues/181)); the server side has already been split into `server/routes/*.js` and `client/src/features/tiles.js`, and that split — one puzzle/feature per file, registered through a small data table rather than by editing a shared file — is the pattern for everything new, not just puzzles. If a step below tells you to add to a specific module instead of a monolith, that's this rule in practice.
 
 1. **Server route** — Add `GET /<type>-api/question` and `POST /<type>-api/check` in the matching group file under [`server/routes/`](server/routes/) (e.g. `algebra.js`, `geometry.js`) rather than `server/index.js` — the routes were extracted out of the monolith into these grouped router modules. Difficulty (0 – 3) drives parameter ranges.
 2. **Proxy** — Add the new prefix to `client/vite.config.js` proxy list.
