@@ -1,4 +1,4 @@
-// Sipmap — deterministic, comment-only PR gate check bot.
+// Parikshak — deterministic, comment-only PR gate check bot.
 //
 // Runs entirely on GitHub's own runners via actions/github-script (no external
 // hosting). It never approves, closes, or requests changes on a PR — it only
@@ -11,7 +11,7 @@
 // don't fork it per repo; add repo-specific behavior via env vars in the
 // workflow file instead, so both repos stay on the same logic.
 
-const MARKER = '<!-- sipmap:report -->';
+const MARKER = '<!-- parikshak:report -->';
 
 // GitHub's own closing-keyword list: https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues-and-pull-requests/linking-a-pull-request-to-an-issue
 const CLOSES_RE = /\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s*#(\d+)\b/gi;
@@ -110,10 +110,10 @@ module.exports = async ({ github, context, core }) => {
   const failed = findings.filter((f) => f.ok === false);
   const unknown = findings.filter((f) => f.ok === null);
   const header = failed.length > 0
-    ? `### ⚠️ Sipmap — ${failed.length} issue${failed.length > 1 ? 's' : ''} found`
+    ? `### ⚠️ Parikshak — ${failed.length} issue${failed.length > 1 ? 's' : ''} found`
     : unknown.length > 0
-      ? '### ⏳ Sipmap — mostly clear, one check still pending'
-      : '### ✅ Sipmap — all automated checks pass';
+      ? '### ⏳ Parikshak — mostly clear, one check still pending'
+      : '### ✅ Parikshak — all automated checks pass';
 
   const lines = findings.map((f) => {
     const icon = f.ok === true ? '✅' : f.ok === false ? '❌' : '⏳';
@@ -121,7 +121,7 @@ module.exports = async ({ github, context, core }) => {
   });
 
   const footer =
-    '\n\n*This is Sipmap, an automated, comment-only check — it never closes or approves a PR. ' +
+    '\n\n*This is Parikshak, an automated, comment-only check — it never closes or approves a PR. ' +
     'A human reviewer still makes the final call. See `CONTRIBUTING.md` for the full contribution rules.*';
 
   const commentBody = `${MARKER}\n${header}\n\n${lines.join('\n')}${footer}`;
@@ -140,5 +140,5 @@ module.exports = async ({ github, context, core }) => {
   // toward "blocking" even without branch protection turned on. If you'd
   // rather have that visual signal too, swap this for
   // `if (failed.length > 0) core.setFailed(...)`.
-  core.info(`Sipmap: ${failed.length} failing / ${unknown.length} pending / ${findings.length - failed.length - unknown.length} passing gate(s) for PR #${prNumber}.`);
+  core.info(`Parikshak: ${failed.length} failing / ${unknown.length} pending / ${findings.length - failed.length - unknown.length} passing gate(s) for PR #${prNumber}.`);
 };
