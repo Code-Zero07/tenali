@@ -1,4 +1,4 @@
-name: PR gate check
+name: Sipmap PR gate check
 
 # Comment-only, deterministic checks — see .github/scripts/pr-gate-check.js
 # and ~/Desktop/PR_REVIEW_AUTOMATION_SOP.md. Never approves, closes, or
