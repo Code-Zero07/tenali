@@ -39,9 +39,12 @@ module.exports = async ({ github, context, core }) => {
 
   const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
 
+  core.startGroup(`Parikshak gate check — PR #${prNumber}: ${pr.title}`);
+
   const findings = [];
 
   // --- Gate 1: PR must reference a Closes/Fixes/Resolves #N issue that exists and is open ---
+  core.info('Gate 1/3 — linked issue (Closes/Fixes/Resolves #N, must exist and be open):');
   const body = pr.body || '';
   const refs = [...body.matchAll(CLOSES_RE)].map((m) => Number(m[2]));
   const uniqueRefs = [...new Set(refs)];
@@ -54,7 +57,9 @@ module.exports = async ({ github, context, core }) => {
         'This PR description does not contain `Closes #N` (or `Fixes #N` / `Resolves #N`) for an issue already on the tracker. ' +
         'Every PR here must map to a listed issue — nothing self-invented. Add the link and this check will re-run automatically on your next push.',
     });
+    core.info('  -> FAIL: no Closes/Fixes/Resolves #N found in the PR description.');
   } else {
+    core.info(`  -> found reference(s) to: ${uniqueRefs.map((n) => `#${n}`).join(', ')}`);
     for (const num of uniqueRefs) {
       try {
         const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: num });
@@ -64,14 +69,17 @@ module.exports = async ({ github, context, core }) => {
             title: `#${num} is a pull request, not an issue`,
             detail: `\`Closes #${num}\` must reference a tracked issue, not another PR.`,
           });
+          core.info(`  -> FAIL: #${num} is a pull request, not an issue.`);
         } else if (issue.state === 'closed') {
           findings.push({
             ok: false,
             title: `#${num} is already closed`,
             detail: `The issue this PR claims to close is already closed. If this PR supersedes it, link the correct open issue instead.`,
           });
+          core.info(`  -> FAIL: #${num} is already closed.`);
         } else {
           findings.push({ ok: true, title: `Linked to open issue #${num}`, detail: issue.title });
+          core.info(`  -> PASS: #${num} exists and is open ("${issue.title}").`);
         }
       } catch (e) {
         findings.push({
@@ -79,14 +87,17 @@ module.exports = async ({ github, context, core }) => {
           title: `#${num} does not exist`,
           detail: `\`Closes #${num}\` references an issue that isn't on this repo's tracker. Every PR must map to a real, listed issue.`,
         });
+        core.info(`  -> FAIL: #${num} does not exist on this repo's tracker.`);
       }
     }
   }
 
   // --- Gate 2: no merge conflict against the base branch ---
+  core.info('Gate 2/3 — merge conflict against the base branch:');
   // `mergeable` is null until GitHub finishes computing it; poll briefly.
   let mergeable = pr.mergeable;
   for (let attempt = 0; mergeable === null && attempt < 5; attempt++) {
+    core.info(`  -> mergeable status still computing, retrying (attempt ${attempt + 1}/5)...`);
     await new Promise((r) => setTimeout(r, 2000));
     const { data: fresh } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
     mergeable = fresh.mergeable;
@@ -97,19 +108,24 @@ module.exports = async ({ github, context, core }) => {
       title: 'Merge conflict with the base branch',
       detail: 'This PR has a merge conflict against its base branch. Rebase or merge the base in and push again — this is checked automatically, not a judgment call.',
     });
+    core.info('  -> FAIL: merge conflict against the base branch.');
   } else if (mergeable === true) {
     findings.push({ ok: true, title: 'No merge conflict', detail: null });
+    core.info('  -> PASS: no merge conflict.');
   } else {
     findings.push({
       ok: null,
       title: 'Merge conflict status still unknown',
       detail: 'GitHub had not finished computing mergeability after several retries. This will be re-checked on the next push or review.',
     });
+    core.info('  -> UNKNOWN: GitHub had not finished computing mergeability after 5 retries.');
   }
 
   // --- Gate 3: lockfile diffs that look like unexplained dependency removals ---
+  core.info('Gate 3/3 — lockfile diffs shaped like unexplained dependency removals:');
   const files = await github.paginate(github.rest.pulls.listFiles, { owner, repo, pull_number: prNumber, per_page: 100 });
   const lockfiles = files.filter((f) => /(^|\/)package-lock\.json$/.test(f.filename));
+  core.info(`  -> ${lockfiles.length} package-lock.json file(s) changed in this PR${lockfiles.length ? ': ' + lockfiles.map((f) => `${f.filename} (+${f.additions}/-${f.deletions})`).join(', ') : ''}.`);
   const suspicious = lockfiles.filter((f) => (f.deletions || 0) > (f.additions || 0) * 2 && f.deletions > 20);
   if (suspicious.length > 0) {
     findings.push({
@@ -119,6 +135,9 @@ module.exports = async ({ github, context, core }) => {
         suspicious.map((f) => `\`${f.filename}\` (+${f.additions}/-${f.deletions})`).join(', ') +
         ' — this pattern has caused real dependency-drop incidents before. If this is intentional (a real dependency removal), say so explicitly in the PR description; otherwise check whether `npm install` was run against a stale lockfile.',
     });
+    core.info(`  -> FAIL: ${suspicious.map((f) => f.filename).join(', ')} looks like a one-sided dependency drop.`);
+  } else {
+    core.info('  -> PASS: no suspicious lockfile diffs.');
   }
 
   // --- Post or update the single report comment ---
@@ -150,10 +169,13 @@ module.exports = async ({ github, context, core }) => {
     await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body: commentBody });
   }
 
+  core.info(existing ? 'Updated the existing report comment in place.' : 'Posted a new report comment.');
+
   // Deliberately does NOT call core.setFailed() — you chose comment-only, and a
   // failed Actions run shows a red X on the PR's checks tab, which is a step
   // toward "blocking" even without branch protection turned on. If you'd
   // rather have that visual signal too, swap this for
   // `if (failed.length > 0) core.setFailed(...)`.
-  core.info(`Parikshak: ${failed.length} failing / ${unknown.length} pending / ${findings.length - failed.length - unknown.length} passing gate(s) for PR #${prNumber}.`);
+  core.info(`Summary: ${failed.length} failing / ${unknown.length} pending / ${findings.length - failed.length - unknown.length} passing gate(s) for PR #${prNumber}.`);
+  core.endGroup();
 };
