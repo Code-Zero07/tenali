@@ -19,9 +19,13 @@
 ---
 
 <!-- live-changelog:start -->
-### 📊 Total: 1048 commits · 75 active days · 41 unique authors
+### 📊 Total: 1050 commits · 77 active days · 42 unique authors
 
 > **📖 How to read this:** Each entry shows a clickable SHA, the author, and a one-line subject. Sub-bullets show the **exact files touched** with per-file `+additions −deletions`, the **total line stats**, and (when present) the **commit body** explaining what & why.
+
+#### 📅 2026-09-16  <sub>(1 commit)</sub>
+
+- 📌 [`fd148133`](https://github.com/vicharanashala/tenali/commit/fd148133c70561df066746822b98c462b1e7d796) — **jgupta05072003-code** — 🔀 PR [#307](https://github.com/vicharanashala/tenali/pull/307) from `sharadvc` — cursor/fix-utf16-hint-modal-276-1f13
 
 #### 📅 2026-09-15  <sub>(17 commits)</sub>
 
@@ -64,6 +68,10 @@
 - 📝 [`57b55a53`](https://github.com/vicharanashala/tenali/commit/57b55a537c0d739a48619470b8617c39bfa40e44) — **JINAL GUPTA** — fix README/CONTRIBUTING inaccuracies and stale puzzle counts
     - 📁 **3 files:** `CONTRIBUTING.md` `+9 −7`, `README.md` `+27 −30`, `scripts/update-readme-contributors.js` `+1 −1`
     - 📊 **`+37 −38`** · 3 files
+
+#### 📅 2026-09-13  <sub>(1 commit)</sub>
+
+- 📌 [`350ccfaa`](https://github.com/vicharanashala/tenali/commit/350ccfaa55dcc375db0e22bb86138d0dda0afb46) — **Sharad** — Remove dead UTF-16 currentHintModal.jsx blocking ESLint
 
 #### 📅 2026-09-12  <sub>(16 commits)</sub>
 
