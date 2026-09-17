@@ -3,7 +3,7 @@ import {
   Plus, X, Calculator, CircleDot, PieChart, Percent, Scale, ArrowLeftRight,
   TrendingUp, Landmark, Receipt, LineChart, Gauge, FunctionSquare, Hash,
   Brackets, Layers, Divide, Square, SquareRadical, Binary, Equal, Sigma,
-  Triangle, Infinity, Variable, BookOpen, Grid3x3, ArrowUpRight, Compass,
+  Triangle, Infinity as InfinityIcon, Variable, BookOpen, Grid3x3, ArrowUpRight, Compass,
   Shapes, Ruler, MapPin, RotateCw, Circle, Cone, Waves, Dice5, BarChart3,
   ListOrdered, Sparkles, ChevronUp, Superscript, Activity, Box, GitBranch,
   CircleDot as DotIcon,
@@ -168,7 +168,7 @@ const TOPIC_ICONS = {
   surds: SquareRadical,
   remfactor: Variable,
   binomial: BookOpen,
-  complex: Infinity,
+  complex: InfinityIcon,
   polymul: X,
   polyfactor: Divide,
   log: Activity,
@@ -276,8 +276,6 @@ export default function TreasureHuntApp({ onBack }) {
   // ── Part D: Fetch worlds on mount ──────────────────────────────────────────
   useEffect(() => {
     let cancelled = false
-    setLoadingWorlds(true)
-    setLoadError('')
     fetch(`${API}/treasurehunt-api/worlds`)
       .then((r) => {
         if (!r.ok) throw new Error(`Server returned ${r.status}`)
@@ -343,6 +341,7 @@ export default function TreasureHuntApp({ onBack }) {
   const handleConfidencePick = (level) => {
     const activeTopics = selectedWorld.topics.filter(t => t.status === 'active')
     if (level === 'adaptive') {
+      setDiagnosticLoading(true)
       setPhase('diagnostic')
       return
     }
@@ -357,7 +356,6 @@ export default function TreasureHuntApp({ onBack }) {
   useEffect(() => {
     if (phase !== 'diagnostic' || !selectedWorldId) return
     let cancelled = false
-    setDiagnosticLoading(true)
     fetch(`${API}/treasurehunt-api/diagnostic/start?worldId=${encodeURIComponent(selectedWorldId)}`)
       .then(r => {
         if (!r.ok) throw new Error(`Server returned ${r.status}`)
