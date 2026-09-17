@@ -45587,6 +45587,7 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
     { key: 'ineq', name: 'Inequalities', subtitle: 'Linear & quadratic inequalities', color: 'green' },
     { key: 'integ', name: 'Integration', subtitle: 'Reverse differentiation & areas', color: 'blue' },
     { key: 'invtrig', name: 'Inverse Trig', subtitle: 'arcsin, arccos, arctan', color: 'green' },
+    { key: 'language', name: 'Language Puzzles', subtitle: 'Fill in the blanks to create new words', color: 'orange' },
     { key: 'limits', name: 'Limits', subtitle: 'Evaluate limits', color: 'purple' },
     { key: 'linearalgebra', name: 'Linear Algebra', subtitle: '56 missions across 6 modules', color: 'orange' },
     { key: 'lineareq', name: 'Linear Equations', subtitle: 'Solve for x in one variable', color: 'blue' },
@@ -45838,8 +45839,7 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
               <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--clr-text-soft)', marginTop: '2px' }}>Run code in 50+ languages</span>
             </button>
 
-            {/* eslint-disable-next-line no-restricted-syntax -- relative navigation to /language subpath, not a base-rooted path */}
-            <button onClick={() => { setMenuOpen(false); window.location.href = window.location.pathname.replace(/\/$/, '') + '/language'; }} style={{
+            <button onClick={() => { setMenuOpen(false); onSelect('language'); }} style={{
               display: 'block', width: '100%', textAlign: 'left', padding: '10px 16px',
               background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text)',
               fontFamily: 'var(--font-body)', fontSize: '0.95rem', transition: 'background var(--transition)'
