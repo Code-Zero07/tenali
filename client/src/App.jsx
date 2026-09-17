@@ -39,6 +39,7 @@ import CrossSectionApp from './CrossSectionApp';
 window.React = React;
 console.log("React version:", React.version);
 import LinearAlgebraApp from './LinearAlgebraApp'
+import { TILES, FEATURED_TILES, MATH_LAB_ENTRY, GEOCRAFT_ENTRY } from './features/tiles'
 
 
 /**
@@ -111,6 +112,28 @@ import GeometryApp from './GeometryApp';
 import EquationSandboxApp from './lib/EquationSandboxApp.jsx';
 import QFormulaConceptApp from './lib/concept/QFormulaConceptApp.jsx';
 import SimulConceptApp from './lib/simul-concept/SimulConceptApp.jsx';
+
+// Concept Playgrounds entry points.
+//
+// modeMap renders <ActiveApp {...standardProps} />, which cannot supply the
+// topic's quiz component, so each concept app gets a thin wrapper that passes
+// it in. The quiz apps themselves are unchanged and their own tiles still work.
+// Both are login-gated: the concept session API authenticates every request.
+function QFormulaConceptMode({ onBack }) {
+  return (
+    <AuthGate>
+      <QFormulaConceptApp onBack={onBack} QFormulaApp={QFormulaApp} />
+    </AuthGate>
+  );
+}
+
+function SimulConceptMode({ onBack }) {
+  return (
+    <AuthGate>
+      <SimulConceptApp onBack={onBack} SimulQuizApp={SimulApp} />
+    </AuthGate>
+  );
+}
 import DiagnosticQuiz from './lib/DiagnosticQuiz.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import CuriosityApp from './Curiosity.jsx';
@@ -4901,7 +4924,7 @@ function AdaptiveMixedApp({ studentName }) {
           {question && (
             <>
               <div className="question-box" style={{ fontSize: '1.4rem' }}>
-                {question.prompt} = ?
+                {question.prompt}{question.prompt.trim().endsWith('?') ? '' : ' = ?'}
               </div>
               <p style={{ fontSize: '0.75rem', opacity: 0.5, textAlign: 'center', margin: '0.25rem 0' }}>
                 {question.type === 'fraction-add' || question.type === 'fraction-mul' ? 'Answer as simplified fraction (e.g., 3/4)' :
@@ -44783,7 +44806,9 @@ function App() {
     polyfactor: PolyFactorApp,     // Polynomial factoring
     primefactor: PrimeFactorApp,   // Prime factorization
     qformula: QFormulaApp,         // Quadratic formula
+    'qformula-concept': QFormulaConceptMode, // Quadratic formula — 5-stage concept lab
     simul: SimulApp,               // Simultaneous equations
+    'simul-concept': SimulConceptMode,       // Simultaneous equations — 5-stage concept lab
     funceval: FuncEvalApp,         // Function evaluation
     lineq: LineEqApp,              // Line equation
     basicarith: BasicArithApp,     // Basic arithmetic (+, −, ×)
@@ -44862,7 +44887,7 @@ function App() {
     polygym: PolyGymApp,           // Polynomials Gym — arithmetic → monomial algebra (MCQ)
     treasurehunt: TreasureHuntApp, // Treasure Hunt — solve & seek grid game
     // matrixmystics mode removed — Matrix Mystics content now embedded in LinearAlgebraApp's mission quiz
-    trackProgress: null,
+    trackProgress: ProgressTrackerApp,
     riddle: RiddleApp,              // Math Riddles
     'water-jug-lab': WaterJugLab,
     'equation-crafting-lab': EquationCraftingLab,
@@ -44942,10 +44967,6 @@ function App() {
           }}
         />
       );
-    }
-
-    if (mode === 'trackProgress') {
-      return <ProgressTrackerApp onBack={() => setMode(null)} />;
     }
 
     if (ActiveApp) {
@@ -45038,6 +45059,7 @@ function App() {
       multiply: 'Multiplication Tables', vocab: 'Vocabulary', spot: 'Twin Hunt',
       sqrt: 'Square Root', polymul: 'Polynomial Multiplication', polyfactor: 'Polynomial Factoring',
       primefactor: 'Prime Factorization', qformula: 'Quadratic Formula', simul: 'Simultaneous Equations',
+      'qformula-concept': 'Quadratics: Concept Lab', 'simul-concept': 'Sim. Equations: Concept Lab',
       funceval: 'Functions', lineq: 'Line Equations', basicarith: 'Arithmetic',
       fractionadd: 'Fractions', surds: 'Surds', indices: 'Indices',
       sequences: 'Sequences & Series', ratio: 'Ratio & Proportion', percent: 'Percentages',
@@ -45530,122 +45552,16 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
   const [showAbout, setShowAbout] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const featuredApps = [
-    { key: 'randommix', name: 'Random Mix', subtitle: 'Adaptive cross-topic quiz', color: 'featured' },
-    { key: 'custom', name: 'Custom Lesson', subtitle: 'Build your own mixed quiz', color: 'featured' },
-    { key: 'gym', name: 'Gym', subtitle: 'Adaptive workout across all 7 gym puzzles', color: 'featured' },
-    { key: 'treasurehunt', name: 'Treasure Hunt', subtitle: 'Solve & seek on a treasure grid', color: 'featured' },
-    { key: 'contrastlist', name: 'Contrast Challenge', subtitle: 'Distinguish similar concepts', color: 'featured' },
-    { key: 'vachana', name: 'Vachana', subtitle: 'Mathematical Literacy Lab', color: 'featured' },
-  ]
-  // Visual Learning Universe lives only in the hamburger menu
-  const mathLabEntry = { key: 'math-lab', name: '🔬 Visual Learning Universe', subtitle: 'Visual, Mensuration & Addition labs', color: 'orange' }
-  const geocraftEntry = { key: 'geocraft', name: '📐 GeoCraft', subtitle: 'Interactive Geometry Lab', color: 'featured', isRedirect: true, path: '/geocraft' }
+  const featuredApps = FEATURED_TILES
+  const mathLabEntry = MATH_LAB_ENTRY
+  const geocraftEntry = GEOCRAFT_ENTRY
 
   const hamburgerApps = [
     ...featuredApps,
     { key: 'curiosity', name: 'Curiosity Mode', subtitle: 'Explore "What if" variations', color: 'pink' },
   ]
 
-  // Set false to remove the Car Journey card from the home grid (hamburger-only mode).
-  const CJ_SHOW_GRID_CARD = true
-
-  // All regular quiz apps sorted alphabetically by name
-  const regularApps = [
-    { key: 'battle', name: '⚔️ Battle Arena', subtitle: 'Live fastest-finger duels', color: 'red' },
-    { key: 'detective', name: '🔍 Detective Agency', subtitle: 'Solve math mysteries and crack cases!', color: 'indigo' },
-    { key: 'comic-addition', name: 'Comic Addition', subtitle: 'Story Mode', color: 'purple' },
-    { key: 'addition', name: 'Addition', subtitle: '20-question addition practice', color: 'blue' },
-    { key: 'column-addition', name: 'Column Addition', subtitle: 'Vertical addition with carrying', color: 'blue' },
-    { key: 'column-division', name: 'Column Division', subtitle: 'Vertical division with long division', color: 'blue' },
-    { key: 'column-multiplication', name: 'Column Multiplication', subtitle: 'Vertical multiplication with carrying', color: 'blue' },
-    { key: 'column-subtraction', name: 'Column Subtraction', subtitle: 'Vertical subtraction with borrowing', color: 'blue' },
-    { key: 'angles', name: 'Angles', subtitle: 'Lines, points, parallel lines', color: 'green' },
-    { key: 'basicarith', name: 'Arithmetic', subtitle: '+, −, ×, ÷ with positive & negative', color: 'purple' },
-    { key: 'banking', name: 'Banking (RD)', subtitle: 'Interest & recurring deposits', color: 'blue' },
-    { key: 'bearings', name: 'Bearings', subtitle: 'Three-figure bearings', color: 'green' },
-    { key: 'binomial', name: 'Binomial Theorem', subtitle: 'Expansions & coefficients', color: 'purple' },
-    { key: 'bounds', name: 'Bounds', subtitle: 'Upper & lower bounds', color: 'blue' },
-    { key: 'circmeasure', name: 'Circular Measure', subtitle: 'Radians, arc length, sectors', color: 'green' },
-    { key: 'circleth', name: 'Circle Theorems', subtitle: 'Angles, tangents, cyclic quads', color: 'purple' },
-    { key: 'complex', name: 'Complex Numbers', subtitle: 'Add, multiply, modulus', color: 'blue' },
-    { key: 'congruence', name: 'Congruence', subtitle: 'SSS, SAS, ASA, RHS', color: 'green' },
-    { key: 'conics', name: 'Conic Sections', subtitle: 'Circle, parabola, ellipse, hyperbola', color: 'purple' },
-    { key: 'coordgeom', name: 'Coord. Geometry', subtitle: 'Midpoint, distance, gradient', color: 'blue' },
-    { key: 'decimals', name: 'Decimals', subtitle: 'Add, subtract, multiply, divide', color: 'blue' },
-    { key: 'diff', name: 'Differentiation', subtitle: 'Power rule, turning points', color: 'purple' },
-    { key: 'diffeq', name: 'Differential Eq.', subtitle: 'Order, degree, solve DEs', color: 'green' },
-    { key: 'dotprod', name: 'Dot Products', subtitle: 'Vectors, matrices, fill blanks', color: 'blue' },
-    { key: 'fractionadd', name: 'Fractions', subtitle: 'Add, subtract, multiply & divide', color: 'green' },
-    { key: 'funceval', name: 'Functions', subtitle: 'Evaluate f(x), f(x,y), f(x,y,z)', color: 'green' },
-    { key: 'gk', name: 'GK', subtitle: 'General Knowledge questions', color: 'purple' },
-    { key: 'gst', name: 'GST', subtitle: 'Goods & Services Tax', color: 'purple' },
-    { key: 'hcflcm', name: 'HCF & LCM', subtitle: 'Highest common factor & LCM', color: 'blue' },
-    { key: 'idlivada', name: 'Idli Vada Sambhar', subtitle: 'Multiples, common multiples & LCM game', color: 'orange' },
-    { key: 'heron', name: "Heron's Formula", subtitle: 'Triangle area from sides', color: 'blue' },
-    { key: 'indices', name: 'Indices', subtitle: 'Laws of exponents', color: 'purple' },
-    { key: 'ineq', name: 'Inequalities', subtitle: 'Linear & quadratic inequalities', color: 'green' },
-    { key: 'integ', name: 'Integration', subtitle: 'Reverse differentiation & areas', color: 'blue' },
-    { key: 'invtrig', name: 'Inverse Trig', subtitle: 'arcsin, arccos, arctan', color: 'green' },
-    { key: 'language', name: 'Language Puzzles', subtitle: 'Fill in the blanks to create new words', color: 'orange' },
-    { key: 'limits', name: 'Limits', subtitle: 'Evaluate limits', color: 'purple' },
-    { key: 'linearalgebra', name: 'Linear Algebra', subtitle: '56 missions across 6 modules', color: 'orange' },
-    { key: 'lineareq', name: 'Linear Equations', subtitle: 'Solve for x in one variable', color: 'blue' },
-    { key: 'lineq', name: 'Line Equation', subtitle: 'Find m and c from two points', color: 'green' },
-    { key: 'linprog', name: 'Linear Programming', subtitle: 'Optimize objective functions', color: 'green' },
-    { key: 'log', name: 'Logarithms', subtitle: 'Evaluate, simplify, solve', color: 'purple' },
-    { key: 'matrix', name: 'Matrices', subtitle: 'Add, multiply, determinant', color: 'blue' },
-    { key: 'mensur', name: 'Mensuration', subtitle: 'Area, volume, surface area', color: 'green' },
-    { key: 'multiply', name: 'Multiplication', subtitle: 'Practice any times table (2–19)', color: 'purple' },
-    { key: 'bases', name: 'Number Bases', subtitle: 'Binary, decimal, hexadecimal', color: 'green' },
-    { key: 'basic-arith-lab', name: 'Origin', subtitle: 'Practice +, -, ×, ÷ with varied templates', color: 'blue' },
-    { key: 'percent', name: 'Percentages', subtitle: 'Find, increase, reverse, compound', color: 'blue' },
-    { key: 'permcomb', name: 'Perm. & Comb.', subtitle: 'Permutations & combinations', color: 'purple' },
-    { key: 'polyfactor', name: 'Poly Factor', subtitle: 'Factor a quadratic expression', color: 'green' },
-    { key: 'polymul', name: 'Poly Multiply', subtitle: 'Multiply two polynomials', color: 'blue' },
-    { key: 'polygons', name: 'Polygons', subtitle: 'Interior & exterior angles', color: 'purple' },
-    { key: 'primefactor', name: 'Prime Factors', subtitle: 'Break a number into primes', color: 'green' },
-    { key: 'prob', name: 'Probability', subtitle: 'Single & combined events', color: 'blue' },
-    { key: 'profitloss', name: 'Profit & Loss', subtitle: 'Cost price, discounts, markup', color: 'purple' },
-    { key: 'pythag', name: "Pythagoras' Theorem", subtitle: 'Hypotenuse, legs, 3D', color: 'green' },
-    { key: 'quadratic', name: 'Quadratic', subtitle: 'Find y for y = ax² + bx + c', color: 'blue' },
-    { key: 'qformula', name: 'Quadratics (Formula)', subtitle: 'Find roots of ax² + bx + c = 0', color: 'purple' },
-    { key: 'ratio', name: 'Ratio', subtitle: 'Ratio & proportion', color: 'green' },
-    { key: 'remfactor', name: 'Remainder Theorem', subtitle: 'Remainder & factor theorem', color: 'blue' },
-    { key: 'rounding', name: 'Rounding', subtitle: 'D.P., sig. figs, estimation', color: 'blue' },
-    { key: 'section', name: 'Section Formula', subtitle: 'Midpoint, section, centroid', color: 'green' },
-    { key: 'sequences', name: 'Sequences', subtitle: 'Arithmetic & geometric sequences', color: 'purple' },
-    { key: 'shares', name: 'Shares & Dividends', subtitle: 'Shares, dividends, returns', color: 'purple' },
-    { key: 'sets', name: 'Sets', subtitle: 'Union, intersection, Venn diagrams', color: 'blue' },
-    { key: 'similarity', name: 'Similarity', subtitle: 'Scale factor, area & volume ratios', color: 'green' },
-    { key: 'squaring', name: 'Squaring', subtitle: 'Square numbers using (a+b)²', color: 'purple' },
-    { key: 'simul', name: 'Sim. Equations', subtitle: '2×2 (easy) or 3×3 (hard)', color: 'purple' },
-    { key: 'sdt', name: 'Speed, Distance, Time', subtitle: 'Rate problems & conversions', color: 'blue' },
-    { key: 'sqrt', name: 'Square Root', subtitle: 'Nearest-integer square root drill', color: 'green' },
-    { key: 'stdform', name: 'Standard Form', subtitle: 'Scientific notation operations', color: 'purple' },
-    { key: 'stats', name: 'Statistics', subtitle: 'Mean, median, mode, range', color: 'blue' },
-    { key: 'sudoku', name: 'Sudoku', subtitle: '9x9 number puzzle — fill every row, column & box', color: 'teal' },
-    { key: 'surds', name: 'Surds', subtitle: 'Simplify, add, multiply, rationalise', color: 'green' },
-    { key: 'tatsavit', name: 'Tatsavit', subtitle: 'Algebra simplification drill', color: 'blue' },
-    ...(CJ_SHOW_GRID_CARD ? [{ key: 'carjourney', name: 'The Car Journey', subtitle: '16-stop math road trip — counting to calculus', color: 'orange' }] : []),
-    { key: 'transform', name: 'Transformations', subtitle: 'Reflect, rotate, translate, enlarge', color: 'purple' },
-    { key: 'triangles', name: 'Triangles', subtitle: 'Angle sum, isosceles, exterior', color: 'blue' },
-    { key: 'trig', name: 'Trigonometry', subtitle: 'SOH-CAH-TOA, sine/cosine rule', color: 'green' },
-    { key: 'variation', name: 'Variation', subtitle: 'Direct & inverse proportion', color: 'purple' },
-    { key: 'vectors', name: 'Vectors', subtitle: 'Add, scale, magnitude', color: 'blue' },
-    { key: 'vocab', name: 'Vocabulary', subtitle: 'Match words to definitions', color: 'green' },
-    { key: 'spot', name: 'Twin Hunt', subtitle: 'Find the common object', color: 'purple' },
-    { key: 'gymdecimals', name: 'Gym Decimals', subtitle: 'Signed decimal × decimal — 1-digit MCQ', color: 'purple' },
-    { key: 'guess', name: 'Guess the Number', subtitle: 'Binary magic trick — mind-reading game', color: 'blue' },
-    { key: 'funcgym', name: 'Functions Gym', subtitle: 'Evaluate small polynomials (MCQ)', color: 'blue' },
-    { key: 'dotprodgym', name: 'DotProducts Gym', subtitle: '2D/3D dot products (MCQ)', color: 'green' },
-    { key: 'fracaddgym', name: 'Fractions-add-gym', subtitle: 'Add single-digit fractions (MCQ)', color: 'purple' },
-    { key: 'lineqgym', name: 'LinearEquations-Gym', subtitle: 'Solve linear equations (MCQ)', color: 'blue' },
-    { key: 'indicesgym', name: 'Indices-Gym', subtitle: 'Index laws (MCQ)', color: 'green' },
-    { key: 'polygym', name: 'Polynomials Gym', subtitle: 'Arithmetic → monomial algebra (MCQ)', color: 'blue' },
-    { key: 'water-jug-lab', name: '🧪 Water Jug Lab', subtitle: 'GCD discovery — 13-level progression', color: 'teal' },
-    { key: 'equation-crafting-lab', name: '⚗️ Equation Crafting Lab', subtitle: 'Build expressions in the mixing pot', color: 'orange' },
-  ] // end regularApps (MatrixMystics tile removed — uses LinearAlgebraApp via linearalgebra mode)
+  const regularApps = TILES
 
   // Combined list for search filtering
   const allApps = [...hamburgerApps, ...regularApps]
@@ -45667,18 +45583,7 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
   const isSearching = search.trim() !== ''
   const matchFilter = (a) => a.name.toLowerCase().includes(search.toLowerCase()) || a.subtitle.toLowerCase().includes(search.toLowerCase())
   
-  // Under Goal Practice mode, we include Random Mix & Custom Lesson at the top of the grid list (omitting Gym since it does not support goals)
-  const goalFeatured = [
-    { key: 'randommix', name: 'Random Mix', subtitle: 'Adaptive cross-topic quiz', color: 'featured' },
-    { key: 'custom', name: 'Custom Lesson', subtitle: 'Build your own mixed quiz', color: 'featured' },
-  ]
-  
-  const filteredGoalFeatured = isSearching ? goalFeatured.filter(matchFilter) : goalFeatured
-  const filteredFeatured = isSearching ? featuredApps.filter(matchFilter) : featuredApps
   const filteredRegular = isSearching ? regularApps.filter(matchFilter) : regularApps
-  
-  // Decide which items to show on the main grid list
-  const displayGridApps = isGoalSelection ? filteredRegular : [...filteredRegular]
   const filteredHamburgerApps = isSearching ? hamburgerApps.filter(matchFilter) : hamburgerApps
 
   // Grid layout tracking (for responsive display)
@@ -45700,7 +45605,7 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
   }, [])
 
   // Calculate number of rows for display (for grid dimension label at bottom)
-  const rows = Math.ceil(displayGridApps.length / (cols || 1))
+  const rows = Math.ceil(filteredRegular.length / (cols || 1))
 
   return (
     <>
@@ -45906,7 +45811,7 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
         />
       </div>
       <div id="tour-home-grid" className="menu-grid" ref={gridRef}>
-        {displayGridApps.map((app) => {
+        {filteredRegular.map((app) => {
           const isGold = goldMastery && goldMastery.includes(app.key)
           const isCompleted = isStage3Completed(app.key, completedTopics)
           return (
@@ -56193,7 +56098,7 @@ const BasesApp = makeQuizApp({
 })
 
 const CircleThApp = makeQuizApp({
-  title: 'Circle Theorems', subtitle: 'Angles, tangents, cyclic quads', apiPath: 'circle-api', topicKey: 'circle-theorems',
+  title: 'Circle Theorems', subtitle: 'Angles, tangents, cyclic quads', apiPath: 'circleth-api', topicKey: 'circle-theorems',
   diffLabels: { easy: 'Easy — Semicircle', medium: 'Medium — Centre/Circum', hard: 'Hard — Cyclic quad', extrahard: 'Extra Hard — Tangent' },
   placeholders: 'e.g. 45',
 })
@@ -58362,7 +58267,7 @@ const RANDOM_MIX_TOPICS = [
   { key: 'log', name: 'Logarithms', api: 'log-api' },
   { key: 'diff', name: 'Differentiation', api: 'diff-api' },
   { key: 'bases', name: 'Number Bases', api: 'bases-api' },
-  { key: 'circleth', name: 'Circle Theorems', api: 'circle-api' },
+  { key: 'circleth', name: 'Circle Theorems', api: 'circleth-api' },
   { key: 'integ', name: 'Integration', api: 'integ-api' },
   { key: 'stdform', name: 'Standard Form', api: 'stdform-api' },
   { key: 'bounds', name: 'Bounds', api: 'bounds-api' },
@@ -64717,7 +64622,7 @@ function fetchQuestionForType(type, difficulty, qIndex = 0, sessionGoal = 'stand
     log: `${API}/log-api/question?difficulty=${difficulty}`,
     diff: `${API}/diff-api/question?difficulty=${difficulty}`,
     bases: `${API}/bases-api/question?difficulty=${difficulty}`,
-    circleth: `${API}/circle-api/question?difficulty=${difficulty}`,
+    circleth: `${API}/circleth-api/question?difficulty=${difficulty}`,
     integ: `${API}/integ-api/question?difficulty=${difficulty}`,
     stdform: `${API}/stdform-api/question?difficulty=${difficulty}`,
     bounds: `${API}/bounds-api/question?difficulty=${difficulty}`,
@@ -64759,7 +64664,6 @@ function fetchQuestionForType(type, difficulty, qIndex = 0, sessionGoal = 'stand
 }
 
 function getApiPathForType(type) {
-  if (type === 'circleth') return 'circle-api'
   return `${type}-api`
 }
 
@@ -65449,7 +65353,7 @@ const startQuiz = async () => {
       case 'remfactor': case 'heron': case 'shares': case 'banking': case 'gst':
       case 'section': case 'linprog': case 'circmeasure': case 'conics': case 'diffeq': {
         if (answer === '') return
-        const apiMap = { trig: 'trig-api', ineq: 'ineq-api', coordgeom: 'coordgeom-api', prob: 'prob-api', stats: 'stats-api', matrix: 'matrix-api', vectors: 'vectors-api', dotprod: 'dotprod-api', transform: 'transform-api', mensur: 'mensur-api', bearings: 'bearings-api', log: 'log-api', diff: 'diff-api', bases: 'bases-api', circleth: 'circle-api', integ: 'integ-api', stdform: 'stdform-api', bounds: 'bounds-api', sdt: 'sdt-api', variation: 'variation-api', hcflcm: 'hcflcm-api', profitloss: 'profitloss-api', rounding: 'rounding-api', binomial: 'binomial-api', complex: 'complex-api', angles: 'angles-api', triangles: 'triangles-api', congruence: 'congruence-api', pythag: 'pythag-api', polygons: 'polygons-api', similarity: 'similarity-api', squaring: 'squaring-api', tatsavit: 'tatsavit-api', lineareq: 'lineareq-api', decimals: 'decimals-api', permcomb: 'permcomb-api', limits: 'limits-api', invtrig: 'invtrig-api', remfactor: 'remfactor-api', heron: 'heron-api', shares: 'shares-api', banking: 'banking-api', gst: 'gst-api', section: 'section-api', linprog: 'linprog-api', circmeasure: 'circmeasure-api', conics: 'conics-api', diffeq: 'diffeq-api' }
+        const apiMap = { trig: 'trig-api', ineq: 'ineq-api', coordgeom: 'coordgeom-api', prob: 'prob-api', stats: 'stats-api', matrix: 'matrix-api', vectors: 'vectors-api', dotprod: 'dotprod-api', transform: 'transform-api', mensur: 'mensur-api', bearings: 'bearings-api', log: 'log-api', diff: 'diff-api', bases: 'bases-api', circleth: 'circleth-api', integ: 'integ-api', stdform: 'stdform-api', bounds: 'bounds-api', sdt: 'sdt-api', variation: 'variation-api', hcflcm: 'hcflcm-api', profitloss: 'profitloss-api', rounding: 'rounding-api', binomial: 'binomial-api', complex: 'complex-api', angles: 'angles-api', triangles: 'triangles-api', congruence: 'congruence-api', pythag: 'pythag-api', polygons: 'polygons-api', similarity: 'similarity-api', squaring: 'squaring-api', tatsavit: 'tatsavit-api', lineareq: 'lineareq-api', decimals: 'decimals-api', permcomb: 'permcomb-api', limits: 'limits-api', invtrig: 'invtrig-api', remfactor: 'remfactor-api', heron: 'heron-api', shares: 'shares-api', banking: 'banking-api', gst: 'gst-api', section: 'section-api', linprog: 'linprog-api', circmeasure: 'circmeasure-api', conics: 'conics-api', diffeq: 'diffeq-api' }
         const genPayload = { ...question, userAnswer: answer.trim() }
         res = await fetch(`${API}/${apiMap[curType]}/check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(genPayload) })
         data = await res.json()
