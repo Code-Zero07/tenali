@@ -142,7 +142,7 @@ It is built to run on a single VPS — `tenali.fun` — with one Node process se
       <td align="center"><b>42</b><br/><sub>GitHub contributors</sub></td>
       <td align="center"><b>⭐ 7</b><br/><sub>stars</sub></td>
       <td align="center"><b>🍴 80</b><br/><sub>forks</sub></td>
-      <td align="center"><b>🐛 122</b><br/><sub>open issues</sub></td>
+      <td align="center"><b>🐛 124</b><br/><sub>open issues</sub></td>
     </tr>
   </table>
 </p>
