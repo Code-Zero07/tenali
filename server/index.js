@@ -1747,12 +1747,12 @@ app.use('/api', labRoutes);
  * MUST be the last route — registered after all API endpoints so it does
  * not shadow /<type>-api routes.
  *
- * Sub-path deployments (VITE_BASE_PATH=/summership) get redirected from the
+ * Sub-path deployments (VITE_BASE_PATH=/matrixmystics) get redirected from the
  * domain root to the sub-path so a user landing on https://tenali.fun/
- * ends up on the live, current build at https://tenali.fun/summership/
+ * ends up on the live, current build at https://tenali.fun/matrixmystics/
  * instead of being served a stale SPA shell that can't reach the API.
  */
-const SUBPATH_REDIRECT = (process.env.SUBPATH_REDIRECT || '/summership').replace(/\/+$/, '');
+const SUBPATH_REDIRECT = (process.env.SUBPATH_REDIRECT || '/matrixmystics').replace(/\/+$/, '');
 if (SUBPATH_REDIRECT && SUBPATH_REDIRECT !== '/') {
   app.get('/', (_req, res) => res.redirect(302, SUBPATH_REDIRECT + '/'));
 }
