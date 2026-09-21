@@ -137,12 +137,12 @@ It is built to run on a single VPS — `tenali.fun` — with one Node process se
 <p align="center">
   <table>
     <tr>
-      <td align="center"><b>1050</b><br/><sub>commits</sub></td>
-      <td align="center"><b>110</b><br/><sub>PRs merged</sub></td>
+      <td align="center"><b>1052</b><br/><sub>commits</sub></td>
+      <td align="center"><b>111</b><br/><sub>PRs merged</sub></td>
       <td align="center"><b>42</b><br/><sub>GitHub contributors</sub></td>
-      <td align="center"><b>⭐ 0</b><br/><sub>stars</sub></td>
-      <td align="center"><b>🍴 0</b><br/><sub>forks</sub></td>
-      <td align="center"><b>🐛 0</b><br/><sub>open issues</sub></td>
+      <td align="center"><b>⭐ 7</b><br/><sub>stars</sub></td>
+      <td align="center"><b>🍴 80</b><br/><sub>forks</sub></td>
+      <td align="center"><b>🐛 125</b><br/><sub>open issues</sub></td>
     </tr>
   </table>
 </p>
@@ -690,7 +690,7 @@ tenali.fun
 <!-- live-snapshot:start -->
 | 🏆 Commits | 🔀 Merged PRs | 👥 Contributors | 🧩 Puzzles | 📚 Vocab | 🌍 GK |
 |----------:|------------:|--------------:|---------:|-------:|----:|
-| **1050** | **110** | **42** | **93** | **7,662** | **991** |
+| **1052** | **111** | **42** | **93** | **7,662** | **991** |
 <!-- live-snapshot:end -->
 
 ### 🥇 Leaderboard
@@ -718,12 +718,12 @@ _Live data — last regenerated 2026-09-21 · auto-refreshed by [`github-actions
 | 16. | **jinal-gupta**<br/><sub>↳ also commits as <b>JINAL GUPTA</b></sub> | [jinal-gupta](https://github.com/jinal-gupta) | **12** | 0  | — |
 | 17. | **tanvish desai** | [tanvishdesai](https://github.com/tanvishdesai) | **9** | 2  | — |
 | 18. | **shreejal-bangera**<br/><sub>↳ also commits as <b>Shreejal Bangera</b></sub> | [shreejal-bangera](https://github.com/shreejal-bangera) | **8** | 0  | — |
-| 19. | **ayushkochhar**<br/><sub>↳ also commits as <b>AYUSHKOCHHAR</b></sub> | [ayushkochhar](https://github.com/ayushkochhar) | **6** | 0  | — |
-| 20. | **krishna009-pro**<br/><sub>↳ also commits as <b>Krishna009-pro</b></sub> | [krishna009-pro](https://github.com/krishna009-pro) | **6** | 0  | — |
-| 21. | **SemiColonSlayer** | [sharonyamita-spec](https://github.com/sharonyamita-spec) | **6** | 1  | Math Detective Agency |
-| 22. | **PANDRAJU POORVI PRAVALLIKA** | [poorvipravallika06](https://github.com/poorvipravallika06) | **6** | 1  | HCF/LCM Interactive Module |
-| 23. | **cursor-agent**<br/><sub>↳ also commits as <b>Cursor Agent</b></sub> | [cursor-agent](https://github.com/cursor-agent) | **5** | 0  | — |
-| 24. | **Krishna Gelra** | [KrishnaG-101](https://github.com/KrishnaG-101) | **5** | 1  | Language Puzzles Framework |
+| 19. | **Krishna Gelra** | [KrishnaG-101](https://github.com/KrishnaG-101) | **7** | 2  | Language Puzzles Framework |
+| 20. | **ayushkochhar**<br/><sub>↳ also commits as <b>AYUSHKOCHHAR</b></sub> | [ayushkochhar](https://github.com/ayushkochhar) | **6** | 0  | — |
+| 21. | **krishna009-pro**<br/><sub>↳ also commits as <b>Krishna009-pro</b></sub> | [krishna009-pro](https://github.com/krishna009-pro) | **6** | 0  | — |
+| 22. | **SemiColonSlayer** | [sharonyamita-spec](https://github.com/sharonyamita-spec) | **6** | 1  | Math Detective Agency |
+| 23. | **PANDRAJU POORVI PRAVALLIKA** | [poorvipravallika06](https://github.com/poorvipravallika06) | **6** | 1  | HCF/LCM Interactive Module |
+| 24. | **cursor-agent**<br/><sub>↳ also commits as <b>Cursor Agent</b></sub> | [cursor-agent](https://github.com/cursor-agent) | **5** | 0  | — |
 | 25. | **Rukmender T** | [RukmenderT](https://github.com/RukmenderT) | **5** | 1  | Curiosity Mode |
 | 26. | **Disha Bansal** | [disha01bansal](https://github.com/disha01bansal) | **4** | 0  | — |
 | 27. | **pradeep-gupta7**<br/><sub>↳ also commits as <b>Pradeep-gupta7</b></sub> | [pradeep-gupta7](https://github.com/pradeep-gupta7) | **3** | 0  | — |

@@ -50,7 +50,7 @@
 <!-- live-snapshot:start -->
 | 🏆 Commits | 🔀 Merged PRs | 👥 Contributors | 🧩 Puzzles | 📚 Vocab | 🌍 GK |
 |----------:|------------:|--------------:|---------:|-------:|----:|
-| **1050** | **110** | **42** | **93** | **7,662** | **991** |
+| **1052** | **111** | **42** | **93** | **7,662** | **991** |
 <!-- live-snapshot:end -->
 
 ## 🥇 Leaderboard
@@ -78,12 +78,12 @@ _Live data — last regenerated 2026-09-21 · auto-refreshed by [`github-actions
 | 16. | **jinal-gupta**<br/><sub>↳ also commits as <b>JINAL GUPTA</b></sub> | [jinal-gupta](https://github.com/jinal-gupta) | **12** | 0  | — |
 | 17. | **tanvish desai** | [tanvishdesai](https://github.com/tanvishdesai) | **9** | 2  | — |
 | 18. | **shreejal-bangera**<br/><sub>↳ also commits as <b>Shreejal Bangera</b></sub> | [shreejal-bangera](https://github.com/shreejal-bangera) | **8** | 0  | — |
-| 19. | **ayushkochhar**<br/><sub>↳ also commits as <b>AYUSHKOCHHAR</b></sub> | [ayushkochhar](https://github.com/ayushkochhar) | **6** | 0  | — |
-| 20. | **krishna009-pro**<br/><sub>↳ also commits as <b>Krishna009-pro</b></sub> | [krishna009-pro](https://github.com/krishna009-pro) | **6** | 0  | — |
-| 21. | **SemiColonSlayer** | [sharonyamita-spec](https://github.com/sharonyamita-spec) | **6** | 1  | Math Detective Agency |
-| 22. | **PANDRAJU POORVI PRAVALLIKA** | [poorvipravallika06](https://github.com/poorvipravallika06) | **6** | 1  | HCF/LCM Interactive Module |
-| 23. | **cursor-agent**<br/><sub>↳ also commits as <b>Cursor Agent</b></sub> | [cursor-agent](https://github.com/cursor-agent) | **5** | 0  | — |
-| 24. | **Krishna Gelra** | [KrishnaG-101](https://github.com/KrishnaG-101) | **5** | 1  | Language Puzzles Framework |
+| 19. | **Krishna Gelra** | [KrishnaG-101](https://github.com/KrishnaG-101) | **7** | 2  | Language Puzzles Framework |
+| 20. | **ayushkochhar**<br/><sub>↳ also commits as <b>AYUSHKOCHHAR</b></sub> | [ayushkochhar](https://github.com/ayushkochhar) | **6** | 0  | — |
+| 21. | **krishna009-pro**<br/><sub>↳ also commits as <b>Krishna009-pro</b></sub> | [krishna009-pro](https://github.com/krishna009-pro) | **6** | 0  | — |
+| 22. | **SemiColonSlayer** | [sharonyamita-spec](https://github.com/sharonyamita-spec) | **6** | 1  | Math Detective Agency |
+| 23. | **PANDRAJU POORVI PRAVALLIKA** | [poorvipravallika06](https://github.com/poorvipravallika06) | **6** | 1  | HCF/LCM Interactive Module |
+| 24. | **cursor-agent**<br/><sub>↳ also commits as <b>Cursor Agent</b></sub> | [cursor-agent](https://github.com/cursor-agent) | **5** | 0  | — |
 | 25. | **Rukmender T** | [RukmenderT](https://github.com/RukmenderT) | **5** | 1  | Curiosity Mode |
 | 26. | **Disha Bansal** | [disha01bansal](https://github.com/disha01bansal) | **4** | 0  | — |
 | 27. | **pradeep-gupta7**<br/><sub>↳ also commits as <b>Pradeep-gupta7</b></sub> | [pradeep-gupta7](https://github.com/pradeep-gupta7) | **3** | 0  | — |
@@ -567,6 +567,28 @@ _Live data — last regenerated 2026-09-21 · auto-refreshed by [`github-actions
   <table>
     <tr>
       <td align="center" width="220">
+        <a href="https://github.com/KrishnaG-101"><img src="https://avatars.githubusercontent.com/u/155518412?v=4&s=120" width="120" style="border-radius:50%; border:3px solid #27AE60;" alt="Krishna Gelra"/></a>
+        <br/><b>Krishna Gelra</b>
+        <br/><a href="https://github.com/KrishnaG-101">@KrishnaG-101</a>
+        <br/><sub>🏆 7 commits · 2 PRs merged</sub>
+      </td>
+      <td valign="top" width="*">
+        <h4>19. Language Puzzles Framework</h4>
+        <ul>
+          <li>🧩 <b>Modular Language Puzzles framework (PR #35)</b> — pluggable architecture for word/letter puzzles</li>
+          <li>🆕 <b>Word Creator</b> — fill-in-the-blanks to create new words</li>
+          <li>⚡ <b>Latency optimization</b> — reduced <code>wordCreator</code> verification time</li>
+          <li>🔀 <b>Merge conflict resolution</b> — clean upstream merge</li>
+        </ul>
+      </td>
+    </tr>
+  </table>
+</p>
+
+<p align="center">
+  <table>
+    <tr>
+      <td align="center" width="220">
         <a href="https://github.com/ayushkochhar"><img src="https://github.com/ayushkochhar.png?size=120&s=120" width="120" style="border-radius:50%; border:3px solid #888888;" alt="ayushkochhar"/></a>
         <br/><b>ayushkochhar</b>
         <br/><a href="https://github.com/ayushkochhar">@ayushkochhar</a>
@@ -574,7 +596,7 @@ _Live data — last regenerated 2026-09-21 · auto-refreshed by [`github-actions
         <br/><sub>🔗 also commits as: <b>AYUSHKOCHHAR</b></sub>
       </td>
       <td valign="top" width="*">
-        <h4>19. New Contributor</h4>
+        <h4>20. New Contributor</h4>
         <ul>
           <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
           <li>📊 <b>6 commits</b> across this repo's history</li>
@@ -596,7 +618,7 @@ _Live data — last regenerated 2026-09-21 · auto-refreshed by [`github-actions
         <br/><sub>🔗 also commits as: <b>Krishna009-pro</b></sub>
       </td>
       <td valign="top" width="*">
-        <h4>20. New Contributor</h4>
+        <h4>21. New Contributor</h4>
         <ul>
           <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
           <li>📊 <b>6 commits</b> across this repo's history</li>
@@ -619,7 +641,7 @@ _Live data — last regenerated 2026-09-21 · auto-refreshed by [`github-actions
         <br/><sub><i>(SemiColonSlayer)</i></sub>
       </td>
       <td valign="top" width="*">
-        <h4>21. Math Detective Agency</h4>
+        <h4>22. Math Detective Agency</h4>
         <ul>
           <li>🕵️ <b>Math Detective Agency (PR #54)</b> — story-based mystery math cases with chained clue progression</li>
           <li>🪪 <b>Badge detail modal</b> — CSS for badge detail modal in <code>App.css</code></li>
@@ -641,7 +663,7 @@ _Live data — last regenerated 2026-09-21 · auto-refreshed by [`github-actions
         <br/><sub>🏆 6 commits · 1 PR merged</sub>
       </td>
       <td valign="top" width="*">
-        <h4>22. HCF/LCM Interactive Module</h4>
+        <h4>23. HCF/LCM Interactive Module</h4>
         <ul>
           <li>🍕 <b>Interactive LCM & HCF (PR #12)</b> — dynamic quiz with stepper locks, validation popups, accordion examples, mistake redirection</li>
           <li>🎯 <b>Confidence meter</b> — confidence-based quiz progression with sequential redirection</li>
@@ -665,33 +687,11 @@ _Live data — last regenerated 2026-09-21 · auto-refreshed by [`github-actions
         <br/><sub>🔗 also commits as: <b>Cursor Agent</b></sub>
       </td>
       <td valign="top" width="*">
-        <h4>23. New Contributor</h4>
+        <h4>24. New Contributor</h4>
         <ul>
           <li>🆕 <b>New contributor</b> — auto-added by the readme-bot</li>
           <li>📊 <b>5 commits</b> across this repo's history</li>
           <li>🔗 <i>Add a <code>FALLBACK_PROFILES</code> entry in <code>scripts/update-readme-contributors.js</code> to enrich this card with real name, avatar, location, and curated feature list</i></li>
-        </ul>
-      </td>
-    </tr>
-  </table>
-</p>
-
-<p align="center">
-  <table>
-    <tr>
-      <td align="center" width="220">
-        <a href="https://github.com/KrishnaG-101"><img src="https://avatars.githubusercontent.com/u/155518412?v=4&s=120" width="120" style="border-radius:50%; border:3px solid #27AE60;" alt="Krishna Gelra"/></a>
-        <br/><b>Krishna Gelra</b>
-        <br/><a href="https://github.com/KrishnaG-101">@KrishnaG-101</a>
-        <br/><sub>🏆 5 commits · 1 PR merged</sub>
-      </td>
-      <td valign="top" width="*">
-        <h4>24. Language Puzzles Framework</h4>
-        <ul>
-          <li>🧩 <b>Modular Language Puzzles framework (PR #35)</b> — pluggable architecture for word/letter puzzles</li>
-          <li>🆕 <b>Word Creator</b> — fill-in-the-blanks to create new words</li>
-          <li>⚡ <b>Latency optimization</b> — reduced <code>wordCreator</code> verification time</li>
-          <li>🔀 <b>Merge conflict resolution</b> — clean upstream merge</li>
         </ul>
       </td>
     </tr>
