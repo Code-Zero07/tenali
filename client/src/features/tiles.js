@@ -44,6 +44,7 @@ export const TILES = [
     { key: 'ineq', name: 'Inequalities', subtitle: 'Linear & quadratic inequalities', color: 'green', category: 'algebra' },
     { key: 'integ', name: 'Integration', subtitle: 'Reverse differentiation & areas', color: 'blue', category: 'calculus' },
     { key: 'invtrig', name: 'Inverse Trig', subtitle: 'arcsin, arccos, arctan', color: 'green', category: 'shape-space' },
+    { key: 'language', name: 'Language Puzzles', subtitle: 'Fill in the blanks to create new words', color: 'orange', category: 'shelf' },
     { key: 'limits', name: 'Limits', subtitle: 'Evaluate limits', color: 'purple', category: 'calculus' },
     { key: 'linearalgebra', name: 'Linear Algebra', subtitle: '56 missions across 6 modules', color: 'orange', category: 'linear-algebra' },
     { key: 'lineareq', name: 'Linear Equations', subtitle: 'Solve for x in one variable', color: 'blue', category: 'algebra' },

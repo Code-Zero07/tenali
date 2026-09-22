@@ -45892,8 +45892,7 @@ function Home({ onSelect, onBackToLanding, completedTopics = [], goldMastery = [
               <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--clr-text-soft)', marginTop: '2px' }}>Run code in 50+ languages</span>
             </button>
 
-            {/* eslint-disable-next-line no-restricted-syntax -- relative navigation to /language subpath, not a base-rooted path */}
-            <button onClick={() => { setMenuOpen(false); window.location.href = window.location.pathname.replace(/\/$/, '') + '/language'; }} style={{
+            <button onClick={() => { setMenuOpen(false); onSelect('language'); }} style={{
               display: 'block', width: '100%', textAlign: 'left', padding: '10px 16px',
               background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text)',
               fontFamily: 'var(--font-body)', fontSize: '0.95rem', transition: 'background var(--transition)'
