@@ -39,6 +39,7 @@ export const TILES = [
     { key: 'dotprod', name: 'Dot Products', subtitle: 'Vectors, matrices, fill blanks', color: 'blue', category: 'linear-algebra' },
     { key: 'fractionadd', name: 'Fractions', subtitle: 'Add, subtract, multiply & divide', color: 'green', category: 'number-foundations' },
     { key: 'funceval', name: 'Functions', subtitle: 'Evaluate f(x), f(x,y), f(x,y,z)', color: 'green', category: 'algebra' },
+    { key: 'geocraft', name: '📐 GeoCraft', subtitle: 'Interactive Geometry Lab', color: 'featured', category: 'shape-space' },
     { key: 'gk', name: 'GK', subtitle: 'General Knowledge questions', color: 'purple', category: 'shelf' },
     { key: 'gst', name: 'GST', subtitle: 'Goods & Services Tax', color: 'purple', category: 'everyday-maths' },
     { key: 'hcflcm', name: 'HCF & LCM', subtitle: 'Highest common factor & LCM', color: 'blue', category: 'number-foundations' },
@@ -123,9 +124,7 @@ export const FEATURED_TILES = [
 // Hamburger pin for Visual Learning Universe (#191); also on home grid (#216).
 export const MATH_LAB_ENTRY = { key: 'math-lab', name: '🔬 Visual Learning Universe', subtitle: 'Visual, Mensuration & Addition labs', color: 'orange' }
 
-// GEOCRAFT_ENTRY is the only tile-shaped object carrying isRedirect/path (#191).
-// Those fields are load-bearing: they are why clicking GeoCraft does a full page
-// navigation instead of setting a mode. Do not normalise them away.
-export const GEOCRAFT_ENTRY = { key: 'geocraft', name: '📐 GeoCraft', subtitle: 'Interactive Geometry Lab', color: 'featured', isRedirect: true, path: '/geocraft' }
+// Hamburger pin for GeoCraft (#191); also on home grid (#215).
+export const GEOCRAFT_ENTRY = { key: 'geocraft', name: '📐 GeoCraft', subtitle: 'Interactive Geometry Lab', color: 'featured' }
 
 export default TILES
