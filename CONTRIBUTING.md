@@ -20,6 +20,7 @@ These are what CI actually runs on every PR (see `.github/workflows/test.yml`) �
 - **Client lint:** `cd client && npm run lint` (currently non-blocking in CI until `App.jsx` is split up — but please still run it and fix what you introduce).
 - **Server tests:** `cd server && npm test`.
 - **BKT unit check:** `node server/lib/bkt.test.js`.
+- If you fix existing lint issues, run `npx eslint . --prune-suppressions` to remove obsolete entries from `eslint-suppressions.json`.
 
 There is no `npm run format` or root-level `npm run build`/`npm run test` in this repo — don't rely on tooling docs that assume a single unified script at the root; `client/` and `server/` are separate npm packages with their own scripts.
 
