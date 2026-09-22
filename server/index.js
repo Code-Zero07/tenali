@@ -73,6 +73,7 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
 const questionsDir = path.join(__dirname, '..', 'chitragupta', 'questions');
+const SUBPATH_REDIRECT = (process.env.SUBPATH_REDIRECT || '/matrixmystics').replace(/\/+$/, '');
 
 // Behind nginx: trust the first proxy hop so rate limiting keys off the real
 // client IP (X-Forwarded-For) instead of 127.0.0.1.
@@ -112,8 +113,11 @@ const apiLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter);
 app.use('/api/', apiLimiter);
 
-// Static file serving: Serve built React/Vue client
+// Static file serving: Serve built React/Vue client (both root and sub-path mount)
 app.use(express.static(clientDistPath));
+if (SUBPATH_REDIRECT && SUBPATH_REDIRECT !== '/') {
+  app.use(SUBPATH_REDIRECT, express.static(clientDistPath));
+}
 
 // ─── Auth (MongoDB + JWT) ────────────────────────────────────────────────────
 // Adds /api/auth/login and /api/auth/me. Hardcoded users are seeded into
@@ -1747,12 +1751,11 @@ app.use('/api', labRoutes);
  * MUST be the last route — registered after all API endpoints so it does
  * not shadow /<type>-api routes.
  *
- * Sub-path deployments (VITE_BASE_PATH=/summership) get redirected from the
+ * Sub-path deployments (VITE_BASE_PATH=/matrixmystics) get redirected from the
  * domain root to the sub-path so a user landing on https://tenali.fun/
- * ends up on the live, current build at https://tenali.fun/summership/
+ * ends up on the live, current build at https://tenali.fun/matrixmystics/
  * instead of being served a stale SPA shell that can't reach the API.
  */
-const SUBPATH_REDIRECT = (process.env.SUBPATH_REDIRECT || '/summership').replace(/\/+$/, '');
 if (SUBPATH_REDIRECT && SUBPATH_REDIRECT !== '/') {
   app.get('/', (_req, res) => res.redirect(302, SUBPATH_REDIRECT + '/'));
 }
