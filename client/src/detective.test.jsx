@@ -12,6 +12,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 // ─── Import enhanced story helpers ──────────────────────────────────
 import {
@@ -30,6 +31,8 @@ import {
   getClueEliminableSuspects,
   getClueEliminationReasons,
 } from './detective-stories';
+import { getModeCounts, getModeTabs, isBoardCase, resolveActiveMode } from './detective-modes';
+import EnhancedMathDetectiveApp from './detective-app';
 
 // ─── Helper: Simulate localStorage ─────────────────────────────────
 const localStorageMock = (() => {
@@ -42,6 +45,12 @@ const localStorageMock = (() => {
   };
 })();
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+
+// jsdom does not implement Element.scrollTo, which the case list calls to
+// reset its scroll position whenever the filters change.
+if (!Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = function () {};
+}
 
 // ─── DETECTIVE_RANKS (inline copy matching detective-app.jsx) ──────
 const DETECTIVE_RANKS = [
@@ -799,5 +808,175 @@ describe('formatClueText', () => {
     expect(formatClueText({ type: 'characteristic', key: 'hand', value: 'left' })).toBe('The culprit is left-handed.');
     expect(formatClueText({ type: 'characteristic', key: 'height', value: 'tall' })).toBe('The culprit is tall.');
     expect(formatClueText(null)).toBe('');
+  });
+});
+
+// ─── Case library mode tabs (age-aware) ─────────────────────────────
+//
+// The library groups cases into "Classic Mystery", "Case File" (enhanced)
+// and "Crime Scene" (board). Which groups have cases depends on the
+// learner's age, so a mode with no cases must not be offered as a tab.
+
+describe('Case library mode counts and tabs', () => {
+  const SAMPLE_CASES = [
+    { id: 'case-1' },
+    { id: 'case-2' },
+    { id: 'case-enhanced-1' },
+    { id: 'case-enhanced-2' },
+    { id: 'board-1', type: 'board' },
+  ];
+
+  test('getModeCounts splits cases into classic, case-file and crime-scene', () => {
+    expect(getModeCounts(SAMPLE_CASES)).toEqual({
+      all: 5,
+      classic: 2,
+      enhanced: 2,
+      'crime-scene': 1,
+    });
+  });
+
+  test('getModeCounts handles an empty case list', () => {
+    expect(getModeCounts([])).toEqual({ all: 0, classic: 0, enhanced: 0, 'crime-scene': 0 });
+    expect(getModeCounts(undefined)).toEqual({ all: 0, classic: 0, enhanced: 0, 'crime-scene': 0 });
+  });
+
+  test('isBoardCase only matches board cases', () => {
+    expect(isBoardCase({ id: 'board-1', type: 'board' })).toBe(true);
+    expect(isBoardCase({ id: 'case-1' })).toBe(false);
+    expect(isBoardCase(null)).toBe(false);
+  });
+
+  test('getModeTabs hides a mode with no cases but always keeps All Cases', () => {
+    const counts = { all: 3, classic: 2, enhanced: 0, 'crime-scene': 1 };
+    expect(getModeTabs(counts).map(t => t.key)).toEqual(['all', 'classic', 'crime-scene']);
+  });
+
+  test('getModeTabs keeps All Cases even when there is nothing to show', () => {
+    const counts = { all: 0, classic: 0, enhanced: 0, 'crime-scene': 0 };
+    expect(getModeTabs(counts).map(t => t.key)).toEqual(['all']);
+  });
+
+  test('resolveActiveMode keeps a mode that still has cases', () => {
+    const counts = { all: 3, classic: 2, enhanced: 2, 'crime-scene': 1 };
+    expect(resolveActiveMode('all', counts)).toBe('all');
+    expect(resolveActiveMode('enhanced', counts)).toBe('enhanced');
+    expect(resolveActiveMode('crime-scene', counts)).toBe('crime-scene');
+  });
+
+  test('resolveActiveMode falls back to All Cases when the mode has no cases', () => {
+    const counts = { all: 3, classic: 2, enhanced: 0, 'crime-scene': 1 };
+    expect(resolveActiveMode('enhanced', counts)).toBe('all');
+    expect(resolveActiveMode('unknown-mode', counts)).toBe('all');
+  });
+});
+
+describe('Case library tabs in the running app', () => {
+  function seedProgress(extra = {}) {
+    localStorageMock.setItem('tenali-detective-progress', JSON.stringify({
+      xp: 0,
+      casesSolved: 0,
+      usedCaseIds: [],
+      cases: {},
+      age: 8,
+      ...extra,
+    }));
+  }
+
+  function openLibrary() {
+    render(<EnhancedMathDetectiveApp />);
+    fireEvent.click(screen.getByLabelText('Browse case library'));
+  }
+
+  test('at age 8 the Case File tab is hidden and Crime Scene is offered', () => {
+    seedProgress({ age: 8 });
+    openLibrary();
+
+    // The Case File (enhanced) cases all target age 9+, so at age 8 that tab
+    // is not offered at all. The board cases cover ages 6-9, so Crime Scene
+    // is still there.
+    expect(screen.queryByRole('button', { name: /Case File/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Crime Scene 3/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Classic Mystery/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /All Cases/ })).toBeInTheDocument();
+  });
+
+  test('at age 13 the Case File tab is offered', () => {
+    seedProgress({ age: 13 });
+    openLibrary();
+
+    expect(screen.getByRole('button', { name: /Case File/ })).toBeInTheDocument();
+  });
+});
+
+describe('Resuming an in-progress case', () => {
+  test('an unfinished case is reopened on the stage it was left on', () => {
+    localStorageMock.setItem('tenali-detective-progress', JSON.stringify({
+      xp: 40,
+      casesSolved: 0,
+      usedCaseIds: [],
+      age: 8,
+      cases: {
+        'case-1': { status: 'in_progress', currentStage: 1, totalStages: 3, topic: 'lineareq' },
+      },
+    }));
+
+    render(<EnhancedMathDetectiveApp />);
+
+    // The app drops straight into the case instead of the dashboard, on the
+    // stage the learner had reached.
+    expect(screen.getByText('Stage 2')).toBeInTheDocument();
+    expect(screen.getByText('2 of 3')).toBeInTheDocument();
+    expect(screen.getByText('3x − 5 = 28. Solve for x.')).toBeInTheDocument();
+  });
+});
+
+describe('Opening route from saved progress', () => {
+  function seedProgress(cases, extra = {}) {
+    localStorageMock.setItem('tenali-detective-progress', JSON.stringify({
+      xp: 0,
+      casesSolved: 0,
+      usedCaseIds: [],
+      age: 8,
+      cases,
+      ...extra,
+    }));
+  }
+
+  test('a learner with no saved progress starts on the dashboard', () => {
+    seedProgress({});
+    render(<EnhancedMathDetectiveApp />);
+
+    expect(screen.getByLabelText('Browse case library')).toBeInTheDocument();
+  });
+
+  test('a learner with solved cases but nothing in progress starts in the library', () => {
+    seedProgress({ 'case-1': { status: 'solved', stars: 3, xpEarned: 30 } });
+    render(<EnhancedMathDetectiveApp />);
+
+    expect(screen.getByRole('button', { name: /All Cases/ })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Browse case library')).not.toBeInTheDocument();
+  });
+
+  test('an enhanced case with a saved snapshot resumes in the playing phase', () => {
+    const savedCase = CASE_GENERATORS['case-enhanced-1']();
+    seedProgress({ 'case-enhanced-1': { status: 'in_progress', savedCase } });
+    render(<EnhancedMathDetectiveApp />);
+
+    expect(screen.getByText(/\d+\/\d+ clues solved/)).toBeInTheDocument();
+    expect(screen.queryByText('Suspect Profiles')).not.toBeInTheDocument();
+  });
+
+  test('a generated case without a saved snapshot resumes at the suspect lineup', () => {
+    seedProgress({ 'case-enhanced-1': { status: 'in_progress' } });
+    render(<EnhancedMathDetectiveApp />);
+
+    expect(screen.getByText('Suspect Profiles')).toBeInTheDocument();
+  });
+
+  test('a board case resumes with the current static spec', () => {
+    seedProgress({ 'board-1': { status: 'in_progress', phase: 'exploring' } });
+    render(<EnhancedMathDetectiveApp />);
+
+    expect(screen.getByText(/Start the Investigation/)).toBeInTheDocument();
   });
 });

@@ -15,7 +15,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import './detective-board.css';
 
-import { saveInProgressCase } from './detective-app';
+import { saveInProgressCase } from './detective-storage';
 import {
   createInitialState,
   movePlayer,

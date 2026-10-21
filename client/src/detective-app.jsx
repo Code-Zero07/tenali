@@ -10,11 +10,13 @@
  * It imports stories from detective-stories.js and adds hint & deduplication features.
  */
 
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { ALL_DETECTIVE_STORIES, isEnhancedCase, getEliminationReasons, highlightEvidenceSentences, escapeRegex, formatClueText, getClueEliminableSuspects, getClueEliminationReasons } from './detective-stories'
 import { CASE_GENERATORS } from './detective-generators'
+import { getModeCounts, getModeTabs, isBoardCase, resolveActiveMode } from './detective-modes'
 import BoardCasePlay from './detective-board-app'
 import { BOARD_CASES } from './detective-board-cases'
+import { DETECTIVE_STORAGE_KEY, loadDetectiveProgress, saveDetectiveProgress, saveInProgressCase } from './detective-storage'
 
 // ─── Sound Effects (Web Audio API) ──────────────────────────────────────
 let audioCtx = null;
@@ -40,7 +42,7 @@ function playTone(freq, duration, type = 'sine', volume = 0.3) {
     gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + duration);
-  } catch {}
+  } catch { /* Web Audio unavailable - sound is optional. */ }
 }
 
 function playStarSound(starCount) {
@@ -69,18 +71,7 @@ const DETECTIVE_RANKS = [
   { title: 'Grand Commissioner', xp: 3000 },
 ];
 
-const DETECTIVE_STORAGE_KEY = 'tenali-detective-progress';
 const AUTO_ADVANCE_MS = 3500;
-
-// ─── Progress Helpers ────────────────────────────────────────────────
-
-function loadDetectiveProgress() {
-  try {
-    const raw = localStorage.getItem(DETECTIVE_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { xp: 0, casesSolved: 0, cases: {}, usedCaseIds: [], age: 8, boardMastery: {} };
-}
 
 /**
  * AGE_TOPIC_MAP — Maps each math topic to the minimum age (by Indian curriculum)
@@ -101,10 +92,6 @@ const AGE_TOPIC_MAP = {
   'shapes': 5,
   'patterns': 5,
   'comparisons': 5,
-  // Age 6+ — Class 1: +/- concepts, intro to multiply, basic shapes & measurement
-  'addition': 6,
-  'multiply': 6,
-  'triangles': 6,
   // Age 8+ — Class 3: numbers to 10,000, fractions, measurement, perimeter & area
   'fractionadd': 8,
   'mensur': 8,
@@ -202,24 +189,6 @@ function filterCasesByAge(cases, age) {
     const minAge = AGE_TOPIC_MAP[c.topic] || 16; // unknown topics default to 16+
     return age >= minAge;
   });
-}
-
-/** True for the board-based crime-scene case type. */
-function isBoardCase(c) {
-  return !!(c && c.type === 'board');
-}
-
-function saveDetectiveProgress(data) {
-  try { localStorage.setItem(DETECTIVE_STORAGE_KEY, JSON.stringify(data)); } catch {}
-}
-
-export function saveInProgressCase(caseId, snapshot) {
-  try {
-    const p = loadDetectiveProgress();
-    if (!p.cases) p.cases = {};
-    p.cases[caseId] = { ...snapshot, status: 'in_progress', updatedAt: Date.now() };
-    saveDetectiveProgress(p);
-  } catch {}
 }
 
 function getDetectiveRank(xp) {
@@ -401,6 +370,17 @@ function DetectiveCaseLibrary({ progress, cases, allComplete, onSelectCase, onBa
   }
   const uniqueTopics = Object.keys(topicGroups).sort();
 
+  // How many cases each mode has for the current age. A mode with no cases is
+  // hidden entirely instead of showing a tab that can only ever be empty: the
+  // "Case File" (enhanced) cases all target age 9+, and the "Crime Scene"
+  // board cases only cover ages 6-9.
+  const modeCounts = getModeCounts(cases);
+  const modeTabs = getModeTabs(modeCounts);
+
+  // If the selected mode no longer has any cases (the learner's age changed),
+  // fall back to showing every case rather than an empty list.
+  const activeMode = resolveActiveMode(modeFilter, modeCounts);
+
   // Filter cases by search term, topic, and mode
   const filteredCases = cases.filter(c => {
     const matchesSearch = !searchTerm.trim() || 
@@ -408,16 +388,12 @@ function DetectiveCaseLibrary({ progress, cases, allComplete, onSelectCase, onBa
       c.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.topic.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTopic = topicFilter === 'all' || c.topic === topicFilter;
-    const matchesMode = modeFilter === 'all' ||
-      (modeFilter === 'enhanced' && isEnhancedCase(c)) ||
-      (modeFilter === 'crime-scene' && isBoardCase(c)) ||
-      (modeFilter === 'classic' && !isEnhancedCase(c) && !isBoardCase(c));
+    const matchesMode = activeMode === 'all' ||
+      (activeMode === 'enhanced' && isEnhancedCase(c)) ||
+      (activeMode === 'crime-scene' && isBoardCase(c)) ||
+      (activeMode === 'classic' && !isEnhancedCase(c) && !isBoardCase(c));
     return matchesSearch && matchesTopic && matchesMode;
   });
-
-  const classicCount = cases.filter(c => !isEnhancedCase(c) && !isBoardCase(c)).length;
-  const enhancedCount = cases.filter(c => isEnhancedCase(c)).length;
-  const crimeSceneCount = cases.filter(c => isBoardCase(c)).length;
 
   // Keyboard shortcut: Ctrl+F or / focuses search
   useEffect(() => {
@@ -531,28 +507,23 @@ function DetectiveCaseLibrary({ progress, cases, allComplete, onSelectCase, onBa
 
         {/* Mode filter tabs */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1rem' }}>
-          {[
-            { key: 'all', label: 'All Cases', icon: '📁', count: cases.length },
-            { key: 'classic', label: 'Classic Mystery', icon: '🔎', count: classicCount },
-            { key: 'enhanced', label: 'Case File', icon: '🕵️', count: enhancedCount },
-            { key: 'crime-scene', label: 'Crime Scene', icon: '🗺️', count: crimeSceneCount },
-          ].map(tab => (
+          {modeTabs.map(tab => (
             <button key={tab.key}
               onClick={() => setModeFilter(tab.key)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.3rem',
                 padding: '0.4rem 0.8rem', borderRadius: 999, border: 'none',
-                background: modeFilter === tab.key ? 'var(--clr-accent)' : 'var(--clr-surface)',
-                color: modeFilter === tab.key ? '#fff' : 'var(--clr-text-soft)',
+                background: activeMode === tab.key ? 'var(--clr-accent)' : 'var(--clr-surface)',
+                color: activeMode === tab.key ? '#fff' : 'var(--clr-text-soft)',
                 fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer',
                 whiteSpace: 'nowrap', transition: 'all 0.2s',
-                boxShadow: modeFilter === tab.key ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                boxShadow: activeMode === tab.key ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
               }}
             >
               {tab.icon} {tab.label} <span style={{
                 padding: '1px 6px', borderRadius: 999, fontSize: '0.65rem',
-                background: modeFilter === tab.key ? 'rgba(255,255,255,0.25)' : 'var(--clr-border)',
-              }}>{tab.count}</span>
+                background: activeMode === tab.key ? 'rgba(255,255,255,0.25)' : 'var(--clr-border)',
+              }}>{modeCounts[tab.key]}</span>
             </button>
           ))}
         </div>
@@ -660,7 +631,7 @@ function DetectiveCaseView({ caseData, initialStage, onComplete, onBack }) {
   const [revealed, setRevealed] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [hintLevel, setHintLevel] = useState(0);
-  const [hintUsed, setHintUsed] = useState(false);
+  const [, setHintUsed] = useState(false);
   const [totalHintsUsed, setTotalHintsUsed] = useState(0);
   const [skipMessage, setSkipMessage] = useState(false);
   const [motivationIdx, setMotivationIdx] = useState(0);
@@ -671,16 +642,14 @@ function DetectiveCaseView({ caseData, initialStage, onComplete, onBack }) {
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 100); }, [stageIndex]);
 
   const stage = caseData.stages[stageIndex];
-  if (!stage) return null;
-
-  const hints = stage.hints || [];
+  const hints = stage?.hints || [];
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (revealed || !answer.trim()) return;
-    const correct = checkDetectiveAnswer(stage.answer, answer);
+    const correct = checkDetectiveAnswer(stage?.answer, answer);
     setRevealed(true);
-    setFeedback({ correct, correctAnswer: stage.answer });
+    setFeedback({ correct, correctAnswer: stage?.answer });
     if (!correct) setMotivationIdx(i => (i + 1) % wrongMotivations.length);
   };
 
@@ -807,6 +776,8 @@ function DetectiveCaseView({ caseData, initialStage, onComplete, onBack }) {
     animate();
     return () => { if (frame) cancelAnimationFrame(frame); };
   }, [completed]);
+
+  if (!stage) return null;
 
   if (completed) {
     const starCount = totalHintsUsed === 0 ? 3 : totalHintsUsed <= 2 ? 2 : 1;
@@ -1125,7 +1096,7 @@ const ACHIEVEMENTS = [
   { id: 'veteran',       title: 'Veteran',           icon: '🎖️', desc: 'Solve 10 cases', check: (p) => p.casesSolved >= 10 },
   { id: 'diamond',       title: 'Diamond Detective', icon: '💎', desc: 'Get 3 stars on 5 cases', check: (p) => Object.values(p.cases || {}).filter(c => c.stars === 3).length >= 5 },
   { id: 'scholar',       title: 'Scholar',           icon: '📚', desc: 'Solve cases from 10 topics', check: (p) => { const topics = new Set(Object.values(p.cases || {}).map(c => c.topic)); return topics.size >= 10; } },
-  { id: 'completionist', title: 'Completionist',     icon: '🏆', desc: 'Solve all cases', check: (p) => false },
+  { id: 'completionist', title: 'Completionist',     icon: '🏆', desc: 'Solve all cases', check: () => false },
 ];
 
 const ACHIEVEMENT_STORAGE_KEY = 'tenali-detective-achievements';
@@ -1135,35 +1106,20 @@ function loadAchievements() {
   try {
     const raw = localStorage.getItem(ACHIEVEMENT_STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch {
+    // Stored achievements unreadable (corrupt JSON or storage blocked) - start fresh.
+  }
   return {};
 }
 
 function saveAchievements(data) {
-  try { localStorage.setItem(ACHIEVEMENT_STORAGE_KEY, JSON.stringify(data)); } catch {}
-}
-
-function checkAndAwardAchievements(progress) {
-  const unlocked = loadAchievements();
-  const newlyUnlocked = [];
-  for (const a of ACHIEVEMENTS) {
-    if (!unlocked[a.id] && a.check(progress)) {
-      unlocked[a.id] = { unlockedAt: Date.now() };
-      newlyUnlocked.push(a);
-    }
+  try { localStorage.setItem(ACHIEVEMENT_STORAGE_KEY, JSON.stringify(data)); } catch {
+    // Storage unavailable - achievements are simply not persisted.
   }
-
-  // If completionist check is global
-  // Get ALL_CASES... but this function doesn't have access to it
-  // We'll do the completionist check in the main component
-
-  saveAchievements(unlocked);
-  return newlyUnlocked;
 }
 
-function DetectiveAchievements({ onBack, progress }) {
-  const [unlocked, setUnlocked] = useState(loadAchievements);
-  const [dismissedNotif, setDismissedNotif] = useState(null);
+function DetectiveAchievements({ onBack }) {
+  const [unlocked] = useState(loadAchievements);
 
   const earnedCount = Object.keys(unlocked).length;
   const totalCount = ACHIEVEMENTS.length;
@@ -1236,7 +1192,6 @@ function DetectiveAchievements({ onBack, progress }) {
 // ─── Achievement Notification ─────────────────────────────────────────
 
 function AchievementNotification({ achievements, onDismiss }) {
-  if (!achievements || achievements.length === 0) return null;
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -1250,6 +1205,8 @@ function AchievementNotification({ achievements, onDismiss }) {
       return () => clearTimeout(timer);
     }
   }, [visible]);
+
+  if (!achievements || achievements.length === 0) return null;
 
   return (
     <div style={{
@@ -1287,12 +1244,16 @@ function loadLeaderboard() {
   try {
     const raw = localStorage.getItem(LEADERBOARD_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch {
+    // Stored leaderboard unreadable (corrupt JSON or storage blocked) - start fresh.
+  }
   return { bestScores: [], byCase: {} };
 }
 
 function saveLeaderboard(data) {
-  try { localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(data)); } catch {}
+  try { localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(data)); } catch {
+    // Storage unavailable - leaderboard entries are simply not persisted.
+  }
 }
 
 function updateLeaderboard(caseId, stars, xp, hintLevel, topic) {
@@ -1312,8 +1273,8 @@ function updateLeaderboard(caseId, stars, xp, hintLevel, topic) {
   saveLeaderboard(data);
 }
 
-function DetectiveLeaderboard({ onBack, progress, totalCases, caseLookup }) {
-  const [leaderData, setLeaderData] = useState(loadLeaderboard);
+function DetectiveLeaderboard({ onBack, totalCases, caseLookup }) {
+  const [leaderData] = useState(loadLeaderboard);
   const [sortBy, setSortBy] = useState('stars'); // 'stars' | 'xp' | 'recent'
 
   let entries = Object.entries(leaderData.byCase);
@@ -1420,36 +1381,11 @@ function DetectiveLeaderboard({ onBack, progress, totalCases, caseLookup }) {
 }
 
 // ─── Floating Background Particles ───────────────────────────────────
+// The particle layer is currently rendered empty: the animated emojis were
+// commented out, so the random positions they needed are no longer computed.
 function DetectiveParticles() {
-  const particles = useMemo(() => {
-    const emojis = ['🔍', '🔎', '⭐', '🕵️', '🔦', '📜', '🧩', '💡', '📋', '🔐', '🎯', '📝'];
-    return Array.from({ length: 18 }, (_, i) => ({
-      id: i,
-      emoji: emojis[i % emojis.length],
-      left: Math.random() * 100,
-      size: 1.2 + Math.random() * 1.4,
-      duration: 12 + Math.random() * 18,
-      delay: Math.random() * 20,
-    }));
-  }, []);
-
   return (
-    <div className="mda-particles-container" aria-hidden="true">
-      {/* {particles.map(p => (
-        <span
-          key={p.id}
-          className="mda-particle"
-          style={{
-            left: `${p.left}%`,
-            fontSize: `${p.size}rem`,
-            animationDuration: `${p.duration}s`,
-            animationDelay: `${p.delay}s`,
-          }}
-        >
-          {p.emoji}
-        </span>
-      ))} */}
-    </div>
+    <div className="mda-particles-container" aria-hidden="true" />
   );
 }
 
@@ -3310,14 +3246,65 @@ function PathCasePlay({ story, onComplete, onBack, initialState }) {
 
 // ─── Main EnhancedMathDetectiveApp ────────────────────────────────────
 
+/**
+ * resolveInitialRoute - Works out where the app opens from the saved
+ * progress: a case that is still in progress is resumed where it was left,
+ * a learner without any cases starts on the dashboard, and one who has
+ * already solved some cases starts in the library.
+ */
+function resolveInitialRoute(progress) {
+  const savedCases = progress?.cases || {};
+  const unfinishedCase = Object.entries(savedCases).find(([, p]) => p.status === 'in_progress');
+  const hasAnyCaseStarted = Object.keys(savedCases).length > 0;
+  const allComplete = hasAnyCaseStarted && ALL_CASES.every(c => savedCases[c.id]?.status === 'solved');
+
+  if (!unfinishedCase) {
+    return {
+      screen: allComplete || !hasAnyCaseStarted ? 'dashboard' : 'library',
+      activeCaseId: null,
+      enhancedPhase: null,
+      generatedCase: null,
+    };
+  }
+
+  const [caseId, saved] = unfinishedCase;
+  // Resume from saved snapshot if present; otherwise generate dynamic content.
+  // Board specs are static in-code content — always resume with the current
+  // spec (so the latest notebook content renders) while keeping progress.
+  if (saved && saved.savedCase) {
+    const freshBoardCase = saved.savedCase.type === 'board'
+      ? ALL_CASES.find(c => c.id === caseId)
+      : null;
+    return {
+      screen: 'case',
+      activeCaseId: caseId,
+      enhancedPhase: 'playing',
+      generatedCase: freshBoardCase || saved.savedCase,
+    };
+  }
+  if (CASE_GENERATORS[caseId]) {
+    return {
+      screen: 'case',
+      activeCaseId: caseId,
+      enhancedPhase: 'lineup',
+      generatedCase: CASE_GENERATORS[caseId](),
+    };
+  }
+  return { screen: 'case', activeCaseId: caseId, enhancedPhase: null, generatedCase: null };
+}
+
 export default function EnhancedMathDetectiveApp({ onBack }) {
-  const [progress, setProgress] = useState(loadDetectiveProgress);
-  const [screen, setScreen] = useState('dashboard'); // 'dashboard' | 'library' | 'case' | 'leaderboard' | 'achievements'
-  const [activeCaseId, setActiveCaseId] = useState(null);
+  // The saved progress is read once, when the app mounts: it provides the
+  // progress itself and decides where the app opens.
+  const [initialProgress] = useState(loadDetectiveProgress);
+  const [progress, setProgress] = useState(initialProgress);
+  const [initialRoute] = useState(() => resolveInitialRoute(initialProgress));
+  const [screen, setScreen] = useState(initialRoute.screen); // 'dashboard' | 'library' | 'case' | 'leaderboard' | 'achievements'
+  const [activeCaseId, setActiveCaseId] = useState(initialRoute.activeCaseId);
   const [newAchievements, setNewAchievements] = useState([]);
   const [userAge, setUserAge] = useState(progress.age || 8);
-  const [enhancedPhase, setEnhancedPhase] = useState(null); // null | 'lineup' | 'playing'
-  const [generatedCase, setGeneratedCase] = useState(null); // holds dynamically generated cases (e.g. Profit & Loss)
+  const [enhancedPhase, setEnhancedPhase] = useState(initialRoute.enhancedPhase); // null | 'lineup' | 'playing'
+  const [generatedCase, setGeneratedCase] = useState(initialRoute.generatedCase); // holds dynamically generated cases (e.g. Profit & Loss)
 
   // Persist age whenever it changes
   useEffect(() => {
@@ -3334,41 +3321,8 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
     : 100;
 
   // Track used case IDs per topic for deduplication
-  const usedCaseIds = progress.usedCaseIds || [];
-  // Ensure totalStars is initialized
-  if (!progress.totalStars) progress.totalStars = 0;
-
-  // Determine initial screen
-  useEffect(() => {
-    const unfinishedCase = Object.entries(progress.cases || {}).find(([, p]) => p.status === 'in_progress');
-    const hasAnyCaseStarted = Object.keys(progress.cases || {}).length > 0;
-    const allComplete = hasAnyCaseStarted && ALL_CASES.every(c => progress.cases[c.id]?.status === 'solved');
-
-    if (unfinishedCase) {
-      setActiveCaseId(unfinishedCase[0]);
-      setScreen('case');
-      const saved = unfinishedCase[1];
-      // Resume from saved snapshot if present; otherwise generate dynamic content.
-      // Board specs are static in-code content — always resume with the current
-      // spec (so the latest notebook content renders) while keeping progress.
-      if (saved && saved.savedCase) {
-        const freshBoardCase = saved.savedCase.type === 'board'
-          ? ALL_CASES.find(c => c.id === unfinishedCase[0])
-          : null;
-        setGeneratedCase(freshBoardCase || saved.savedCase);
-        setEnhancedPhase('playing');
-      } else if (CASE_GENERATORS[unfinishedCase[0]]) {
-        setGeneratedCase(CASE_GENERATORS[unfinishedCase[0]]());
-        setEnhancedPhase('lineup');
-      } else {
-        setEnhancedPhase(null);
-      }
-    } else if (allComplete || !hasAnyCaseStarted) {
-      setScreen('dashboard');
-    } else {
-      setScreen('library');
-    }
-  }, []);
+  // (progress.usedCaseIds is read straight off the persisted progress object;
+  //  totalStars is rendered defensively as `progress.totalStars || 0` below.)
 
   // Case deduplication: pick a case that hasn't been used for the same topic
   const handleSelectCase = (caseId) => {
@@ -3522,7 +3476,9 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
       const reset = { xp: 0, casesSolved: 0, cases: {}, usedCaseIds: [], boardMastery: {} };
       saveDetectiveProgress(reset);
       // Also clear leaderboard
-      try { localStorage.removeItem(LEADERBOARD_KEY); } catch {}
+      try { localStorage.removeItem(LEADERBOARD_KEY); } catch {
+        // Storage unavailable - the in-memory leaderboard is cleared regardless.
+      }
       setProgress(reset);
       setEnhancedPhase(null);
       setScreen('dashboard');
@@ -3540,7 +3496,7 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
     return (
       <>
         <AchievementNotification achievements={newAchievements} onDismiss={dismissAchievementNotif} />
-        <DetectiveAchievements onBack={handleBackFromAchievements} progress={progress} />
+        <DetectiveAchievements onBack={handleBackFromAchievements} />
       </>
     );
   }
@@ -3552,7 +3508,7 @@ export default function EnhancedMathDetectiveApp({ onBack }) {
     const caseLookup = {};
     ALL_CASES.forEach(c => { caseLookup[c.id] = c; });
     return (
-      <DetectiveLeaderboard onBack={handleBackFromLeaderboard} progress={progress} totalCases={ALL_CASES.length} caseLookup={caseLookup} />
+      <DetectiveLeaderboard onBack={handleBackFromLeaderboard} totalCases={ALL_CASES.length} caseLookup={caseLookup} />
     );
   }
 
