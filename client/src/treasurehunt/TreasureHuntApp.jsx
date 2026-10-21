@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Plus, X, Calculator, CircleDot, PieChart, Percent, Scale, ArrowLeftRight,
   TrendingUp, Landmark, Receipt, LineChart, Gauge, FunctionSquare, Hash,
   Brackets, Layers, Divide, Square, SquareRadical, Binary, Equal, Sigma,
-  Triangle, Infinity, Variable, BookOpen, Grid3x3, ArrowUpRight, Compass,
+  Triangle, Infinity as InfinityIcon, Variable, BookOpen, Grid3x3, ArrowUpRight, Compass,
   Shapes, Ruler, MapPin, RotateCw, Circle, Cone, Waves, Dice5, BarChart3,
   ListOrdered, Sparkles, ChevronUp, Superscript, Activity, Box, GitBranch,
   CircleDot as DotIcon,
@@ -53,7 +53,7 @@ function saveWorldProgress(worldId, topicTiers, hasPlayed) {
   }
   try {
     localStorage.setItem(getProgressKey(), JSON.stringify(all))
-  } catch { }
+  } catch { /* quota / private mode */ }
 }
 
 function getWorldProgress(worldId) {
@@ -168,7 +168,7 @@ const TOPIC_ICONS = {
   surds: SquareRadical,
   remfactor: Variable,
   binomial: BookOpen,
-  complex: Infinity,
+  complex: InfinityIcon,
   polymul: X,
   polyfactor: Divide,
   log: Activity,
@@ -268,8 +268,6 @@ export default function TreasureHuntApp({ onBack }) {
   const [hintCell, setHintCell] = useState(null)
   const [hasTappedOnce, setHasTappedOnce] = useState(false)
   const [statusBarBreaking, setStatusBarBreaking] = useState(null)
-  const prevLivesRef = useRef(3)
-
   const dismissHowToPlay = () => {
     sessionStorage.setItem('th-how-to-play-seen', '1')
     setShowHowToPlay(false)
@@ -278,8 +276,6 @@ export default function TreasureHuntApp({ onBack }) {
   // ── Part D: Fetch worlds on mount ──────────────────────────────────────────
   useEffect(() => {
     let cancelled = false
-    setLoadingWorlds(true)
-    setLoadError('')
     fetch(`${API}/treasurehunt-api/worlds`)
       .then((r) => {
         if (!r.ok) throw new Error(`Server returned ${r.status}`)
@@ -345,6 +341,7 @@ export default function TreasureHuntApp({ onBack }) {
   const handleConfidencePick = (level) => {
     const activeTopics = selectedWorld.topics.filter(t => t.status === 'active')
     if (level === 'adaptive') {
+      setDiagnosticLoading(true)
       setPhase('diagnostic')
       return
     }
@@ -359,7 +356,6 @@ export default function TreasureHuntApp({ onBack }) {
   useEffect(() => {
     if (phase !== 'diagnostic' || !selectedWorldId) return
     let cancelled = false
-    setDiagnosticLoading(true)
     fetch(`${API}/treasurehunt-api/diagnostic/start?worldId=${encodeURIComponent(selectedWorldId)}`)
       .then(r => {
         if (!r.ok) throw new Error(`Server returned ${r.status}`)

@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { io } from 'socket.io-client'
 import confetti from 'canvas-confetti'
 
-const API = import.meta.env?.VITE_API_BASE_URL || ''
 // socket.io must mount at the same sub-path as the app (e.g. /summership).
 // Using just `window.location.origin` (no path) makes the client connect to
 // the host's `/socket.io/` endpoint, which on this deployment returns the
@@ -145,14 +144,18 @@ function loadHistory() {
 }
 
 function saveHistory(data) {
-  try { localStorage.setItem('battleHistory', JSON.stringify(data)) } catch {}
+  try { localStorage.setItem('battleHistory', JSON.stringify(data)) } catch {
+    // ignore — history persistence is best-effort
+  }
 }
 
 function fireConfetti() {
   try {
     confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } })
     setTimeout(() => confetti({ particleCount: 50, spread: 90, origin: { y: 0.6 } }), 200)
-  } catch {}
+  } catch {
+    // ignore — confetti is decorative
+  }
 }
 
 function Timer({ timeLeft, totalDuration = 15000 }) {
@@ -165,7 +168,6 @@ function Timer({ timeLeft, totalDuration = 15000 }) {
   else if (timeLeft <= 10) { color = 'var(--clr-accent)' }
   if (timeLeft <= 5) barClass = 'bar-urgent'
   else if (timeLeft <= 10) barClass = 'bar-warning'
-
   return (
     <>
       <style jsx>{`
@@ -194,36 +196,6 @@ function Timer({ timeLeft, totalDuration = 15000 }) {
 
 const REACTION_EMOJIS = ['🔥', '👏', '😂', '💀', '👀', '😮']
 
-function ReactionBar({ onSend, disabled }) {
-  const handleClick = (emoji) => {
-    if (!disabled) {
-      onSend(emoji)
-    }
-  }
-  return (
-    <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginTop: 8, flexWrap: 'wrap' }}>
-      {REACTION_EMOJIS.map((e) => (
-        <button key={e} onClick={() => handleClick(e)} disabled={disabled}
-          style={{ fontSize: '1.3rem', padding: '4px 8px', border: '1px solid var(--clr-border)', borderRadius: 'var(--radius)', background: 'var(--clr-surface)', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.4 : 1, transition: 'transform 0.1s, background 0.1s' }}
-          onMouseEnter={(ev) => { if (!disabled) ev.target.style.transform = 'scale(1.2)' }}
-          onMouseLeave={(ev) => { if (!disabled) ev.target.style.transform = 'scale(1)' }}>
-          {e}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function FloatingReaction({ emoji }) {
-  return (
-    <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '3.5rem', pointerEvents: 'none', zIndex: 1000, animation: 'reaction-pop 1.5s ease-out forwards', filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))' }}>
-      {emoji}
-      <style jsx>{`
-        @keyframes reaction-pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 50% { transform: translate(-50%, -80%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -120%) scale(0.8); } }
-      `}</style>
-    </div>
-  )
-}
 
 export default function BattleApp({ onBack, initialTopic }) {
   const [phase, setPhase] = useState('lobby')
@@ -251,27 +223,19 @@ export default function BattleApp({ onBack, initialTopic }) {
   const [matchWinner, setMatchWinner] = useState(null)
   const [finalScores, setFinalScores] = useState([])
   const [matchHistory, setMatchHistory] = useState([])
-  const [matchTopic, setMatchTopic] = useState('')
   const [matchNumQ, setMatchNumQ] = useState(5)
-  const [matchPlayers, setMatchPlayers] = useState([])
   const [history, setHistory] = useState(loadHistory)
   const [openRooms, setOpenRooms] = useState({})
   const timerRef = useRef(null)
   const answerRef = useRef(null)
-  const screenShakeRef = useRef(false)
   const [streaks, setStreaks] = useState({})
-  const [incomingReaction, setIncomingReaction] = useState(null)
   const [opponentAnsweredCount, setOpponentAnsweredCount] = useState(0)
-  const [totalPlayers, setTotalPlayers] = useState(2)
   const [sudokuPuzzle, setSudokuPuzzle] = useState(null)
   const [sudokuGrid, setSudokuGrid] = useState(null)
   const [sudokuRaceActive, setSudokuRaceActive] = useState(false)
   const [sudokuOpponentFinished, setSudokuOpponentFinished] = useState(false)
-  const [sudokuRaceStart, setSudokuRaceStart] = useState(0)
-  const [sudokuMyTime, setSudokuMyTime] = useState(null)
   const [sudokuWrongCount, setSudokuWrongCount] = useState(0)
   const [sudokuSelectedCell, setSudokuSelectedCell] = useState(null)
-  const [isSudokuTopic, setIsSudokuTopic] = useState(false)
 
   useEffect(() => {
     socket.on('connect', () => {
@@ -285,26 +249,28 @@ export default function BattleApp({ onBack, initialTopic }) {
     }
     return () => { socket.off('connect'); socket.off('openRooms') }
   }, [])
+const resetToLobby = useCallback(() => {
+    setPhase('lobby')
+    setRoomCode('')
+    setPlayers([])
+    setQuestion(null)
+    setAnswer('')
+    setScores([])
+    setRoundWinner(null)
+    setRoundPlayers([])
+    setSudokuPuzzle(null)
+    setSudokuGrid(null)
+    setSudokuRaceActive(false)
+    setSudokuWrongCount(0)
+    setSudokuSelectedCell(null)
+    setSudokuOpponentFinished(false)
+    clearInterval(timerRef.current)
+    setTimeout(() => socket.emit('getOpenRooms'), 100)
+  }, [])
 
   useEffect(() => {
-    const resetRoomState = () => {
-      setPlayers([])
-      setQuestion(null)
-      setAnswer('')
-      setScores([])
-      setRoundWinner(null)
-      setRoundPlayers([])
-      setOpponentAnswered(false)
-      setOpponentAnsweredCount(0)
-      setTimeLeft(0)
-      setRound(0)
-      setPhase('lobby')
-      clearInterval(timerRef.current)
-    }
-
-    socket.on('roomUpdate', ({ players: p, topic: t }) => {
+    socket.on('roomUpdate', ({ players: p }) => {
       setPlayers(p)
-      setTotalPlayers(p.length)
       if (p.length === 2) {
         const readyPlayers = p.filter(player => player.ready)
         if (readyPlayers.length === 2 && !players.every((player, idx) => player.ready === p[idx].ready)) {
@@ -313,8 +279,7 @@ export default function BattleApp({ onBack, initialTopic }) {
       }
     })
 
-    socket.on('matchStart', ({ topic: t, rounds }) => {
-      setMatchTopic(t)
+    socket.on('matchStart', ({ rounds }) => {
       setTotalRounds(rounds)
       setPhase('playing')
       setOpponentAnsweredCount(0)
@@ -355,13 +320,11 @@ export default function BattleApp({ onBack, initialTopic }) {
       if (w === myId) fireConfetti()
     })
 
-    socket.on('matchEnd', ({ winner: w, finalScores: fs, topic: t, numQuestions: nq, history: h, players: mp, streaks: finalStreaks }) => {
+    socket.on('matchEnd', ({ winner: w, finalScores: fs, topic: t, numQuestions: nq, history: h, streaks: finalStreaks }) => {
       setMatchWinner(w)
       setFinalScores(fs)
-      setMatchTopic(t)
       setMatchNumQ(nq)
       setMatchHistory(h || [])
-      setMatchPlayers(mp || [])
       if (finalStreaks) setStreaks(finalStreaks)
       setPhase('matchEnd')
       if (w === myId || w === 'draw') fireConfetti()
@@ -382,23 +345,21 @@ export default function BattleApp({ onBack, initialTopic }) {
     socket.on('openRooms', (rooms) => setOpenRooms(rooms))
     socket.on('error', (msg) => setError(msg))
 
-    socket.on('sudokuRaceStart', ({ puzzle, raceStart }) => {
+    socket.on('sudokuRaceStart', ({ puzzle }) => {
       setSudokuPuzzle(puzzle)
       setSudokuGrid(puzzle.map(row => [...row]))
       setSudokuRaceActive(true)
-      setSudokuRaceStart(raceStart)
-      setSudokuMyTime(null)
       setSudokuWrongCount(0)
       setSudokuSelectedCell(null)
       setSudokuOpponentFinished(false)
       setPhase('sudokuRace')
     })
 
-    socket.on('opponentFinished', ({ playerId, time }) => {
+    socket.on('opponentFinished', () => {
       setSudokuOpponentFinished(true)
     })
 
-    socket.on('cellResult', ({ correct, wrongCount }) => {
+    socket.on('cellResult', ({ wrongCount }) => {
       setSudokuWrongCount(wrongCount || 0)
     })
 
@@ -415,31 +376,11 @@ export default function BattleApp({ onBack, initialTopic }) {
       socket.off('cellResult'); socket.off('sudokuForcedEnd')
       clearInterval(timerRef.current)
     }
-  }, [myId, players])
+   }, [myId, players, resetToLobby])
 
-  const resetToLobby = useCallback(() => {
-    setPhase('lobby')
-    setRoomCode('')
-    setPlayers([])
-    setQuestion(null)
-    setAnswer('')
-    setScores([])
-    setRoundWinner(null)
-    setRoundPlayers([])
-    setSudokuPuzzle(null)
-    setSudokuGrid(null)
-    setSudokuRaceActive(false)
-    setSudokuWrongCount(0)
-    setSudokuSelectedCell(null)
-    setSudokuOpponentFinished(false)
-    setSudokuMyTime(null)
-    clearInterval(timerRef.current)
-    setTimeout(() => socket.emit('getOpenRooms'), 100)
-  }, [])
-
+  
   const handleCreate = useCallback(() => {
     setError('')
-    setIsSudokuTopic(topic === 'sudoku')
     socket.emit('createRoom', { name: name.trim() || 'Player', topic, numQuestions }, ({ ok, code, players: p, error: e }) => {
       if (!ok) { setError(e); return }
       setRoomCode(code); setPlayers(p); setMyId(socket.id); setPhase('waiting')
@@ -467,18 +408,6 @@ export default function BattleApp({ onBack, initialTopic }) {
   const handleLeave = useCallback(() => { socket.emit('leave'); resetToLobby() }, [resetToLobby])
   const handleKeyDown = useCallback((e) => { if (e.key === 'Enter' && phase === 'playing' && question) handleSubmit() }, [phase, question, handleSubmit])
 
-  const handleSudokuCellEdit = useCallback((r, c, val) => {
-    if (!sudokuPuzzle || sudokuPuzzle[r][c] !== 0) return
-    const num = Number(val)
-    if (isNaN(num) || num < 1 || num > 9) return
-    setSudokuGrid(prev => {
-      const next = prev.map(row => [...row])
-      next[r][c] = num
-      return next
-    })
-    socket.emit('submitCell', { r, c, val: num })
-  }, [sudokuPuzzle])
-
   const handleSudokuNumberSelect = useCallback((num) => {
     if (!sudokuSelectedCell || !sudokuRaceActive || sudokuWrongCount >= 5) return
     const { r, c } = sudokuSelectedCell
@@ -493,9 +422,8 @@ export default function BattleApp({ onBack, initialTopic }) {
   }, [sudokuSelectedCell, sudokuPuzzle, sudokuRaceActive, sudokuWrongCount])
 
   const handleSudokuComplete = useCallback(() => {
-    setSudokuMyTime(Date.now() - sudokuRaceStart)
     socket.emit('sudokuComplete')
-  }, [sudokuRaceStart])
+  }, [])
 
   const topicInfo = ALL_MODULES.find(t => t.key === topic) || TOPICS.find(t => t.key === topic) || TOPICS[0]
   const myFinalScore = finalScores.find(s => s.id === myId)?.score || 0
@@ -897,8 +825,6 @@ export default function BattleApp({ onBack, initialTopic }) {
   }
 
   if (phase === 'roundResult') {
-    const me = roundPlayers.find(p => p.id === myId)
-    const opp = roundPlayers.find(p => p.id !== myId)
     return (
       <div className="app-shell">
         <div className="card is-wide" style={{ padding: '24px 20px', maxWidth: 500, margin: '0 auto', textAlign: 'center' }}>

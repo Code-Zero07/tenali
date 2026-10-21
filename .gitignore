@@ -1,7 +1,5 @@
 node_modules
 *.log
-*.opencode
-*lint-errors.txt
 client/dist
 server.log
 
@@ -11,6 +9,7 @@ server/dictionaryCache
 ISSUE_DRAFT.md
 PR_DRAFT.md
 **/*.ps1
+.env
 
 # local scratch / debug throwaways
 scratch/
@@ -21,3 +20,5 @@ server/_probe*.js
 # Backup snapshots — never commit these; use git history instead
 *.bak
 *.bak.*
+__pycache__/
+*.pyc

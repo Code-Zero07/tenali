@@ -90,6 +90,13 @@ const UserSchema = new mongoose.Schema({
   totalSolved: { type: Number, default: 0 },
   streak: { type: Number, default: 0 },
   lastActiveDate: { type: String, default: "" },
+  weeklyHabit: {
+    targetDaysPerWeek: { type: Number, default: 3 },
+    currentWeekYear: { type: String, default: '' },
+    activeDaysThisWeek: { type: [String], default: [] },
+    weeklyStreak: { type: Number, default: 0 },
+    lastWarmupCompletedAt: { type: Date, default: null }
+  },
   milestones: [
     {
       event: { type: String, required: true },
@@ -104,7 +111,10 @@ const UserSchema = new mongoose.Schema({
   role: { type: String, default: 'user', enum: ['user', 'admin'] }
 });
 
-UserSchema.pre('save', function (next) {
+// Mongoose 9 removed the `next` callback from document middleware: the hook is
+// awaited instead, so it takes no arguments and this body just runs to
+// completion. Do not reintroduce a `next` parameter — calling it throws.
+UserSchema.pre('save', function () {
   if (this.isModified('coins')) {
     const val = this.coins;
     this.xp = val;
@@ -126,7 +136,6 @@ UserSchema.pre('save', function (next) {
     this.xp = val;
     this.coinBalance = val;
   }
-  next();
 });
 
 const ProgressSchema = new mongoose.Schema({

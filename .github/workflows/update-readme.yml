@@ -14,7 +14,7 @@ on:
   schedule:
     # 🔁 Refresh every 12 hours so the leaderboard never goes stale
     # (UTC 00:00 and 12:00 — even if no commit/PR triggered an update)
-    - cron: '0 0,12 * * *'
+    - cron: '0 0 * * 0'
 
 # Cancel any in-flight run when a new push arrives
 concurrency:

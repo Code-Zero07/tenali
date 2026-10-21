@@ -46,6 +46,8 @@ export default defineConfig({
     proxy: {
       // Primary API endpoint - routes to main quiz service
       '/api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
+      // Conceptual MCQ quiz API
+      '/conceptual-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       // Transfer challenge API
       '/transfer-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       // Squaring quiz API (was missing from proxy list — broke Monsters feature on decimals/squaring/lineareq topics)
@@ -162,7 +164,7 @@ export default defineConfig({
       '/log-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       '/diff-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       '/bases-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
-      '/circle-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
+      '/circleth-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       '/integ-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       '/stdform-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       '/bounds-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
@@ -207,6 +209,9 @@ export default defineConfig({
       '/alchemy-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       '/jug-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       '/darts-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
+      '/graph': { target: 'http://127.0.0.1:4000', changeOrigin: true },
+      '/path':  { target: 'http://127.0.0.1:4000', changeOrigin: true },
+      '/graph-data.json': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       // Sudoku quiz API
       '/sudoku-api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       // Math Riddles API

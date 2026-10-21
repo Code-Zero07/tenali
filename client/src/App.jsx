@@ -26,8 +26,8 @@
 import { HintModal } from './components/HintSystem/HintModal.jsx';
 import { useQuizHintsAndXp } from './components/HintSystem/useHints.jsx';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import ConceptualVisualDiagram from './components/ConceptualVisualDiagram';
 import VoiceAssistant from './components/VoiceAssistant';
-import { motion } from 'framer-motion';
 import OnboardingTour from './components/OnboardingTour';
 import SpatialReasoningMCQ from './SpatialReasoningMCQ';
 import ScribbleGuessApp from './ScribbleGuessApp';
@@ -35,20 +35,32 @@ import ShapeSlicer3D from './ShapeSlicer3D';
 import ShapeTranslatorApp from './ShapeTranslatorApp';
 import NetBuilderApp from './NetBuilderApp';
 import CrossSectionApp from './CrossSectionApp';
+import DailyWarmupCard from './components/DailyWarmupCard';
 
 window.React = React;
 console.log("React version:", React.version);
 import LinearAlgebraApp from './LinearAlgebraApp'
+import PathMap, {
+  PmQuestBanner,
+  PmSuggestIcon,
+  PmGoalModal,
+  PmHomeSection,
+  PmHamburgerItem
+} from './PathMap';
+import { pmTrackAnswer } from './pathMapHelpers';
 import { TILES, FEATURED_TILES, MATH_LAB_ENTRY, GEOCRAFT_ENTRY } from './features/tiles'
+import LandingPage from './components/LandingPage/LandingPage.jsx'
+import LandingNavbar from './components/LandingPage/LandingNavbar.jsx'
 
 
 /**
  * useProgressSubmit Hook
  * Submits the result of a quiz question to the backend to track mastery and ensure unique questions.
  */
-function useProgressSubmit(revealed, isCorrect, topic, questionId) {
+export function useProgressSubmit(revealed, isCorrect, topic, questionId) {
   useEffect(() => {
     if (!revealed) return;
+    try { pmTrackAnswer(topic, 'medium', isCorrect); } catch {}
     const token = localStorage.getItem('tenali-auth-token');
     if (!token || !topic) return;
 
@@ -98,6 +110,7 @@ import VisualMathLabRedux, {
 import CoordinateGrid from './components/CoordinateGrid';
 import LanguageDashboard from './language/LanguageDashboard'
 import ContrastChallengeApp, { QuizLayoutExtension } from './ContrastChallengeApp'
+import CoordGeomInteractiveApp from './apps/CoordGeomInteractiveApp.jsx'
 import { VOCAB_CORPUS } from './vocabCorpus'
 import PercentExplanationApp from './PercentExplanationApp'
 import { playSound } from './audioContext'
@@ -112,6 +125,28 @@ import GeometryApp from './GeometryApp';
 import EquationSandboxApp from './lib/EquationSandboxApp.jsx';
 import QFormulaConceptApp from './lib/concept/QFormulaConceptApp.jsx';
 import SimulConceptApp from './lib/simul-concept/SimulConceptApp.jsx';
+
+// Concept Playgrounds entry points.
+//
+// modeMap renders <ActiveApp {...standardProps} />, which cannot supply the
+// topic's quiz component, so each concept app gets a thin wrapper that passes
+// it in. The quiz apps themselves are unchanged and their own tiles still work.
+// Both are login-gated: the concept session API authenticates every request.
+function QFormulaConceptMode({ onBack }) {
+  return (
+    <AuthGate>
+      <QFormulaConceptApp onBack={onBack} QFormulaApp={QFormulaApp} />
+    </AuthGate>
+  );
+}
+
+function SimulConceptMode({ onBack }) {
+  return (
+    <AuthGate>
+      <SimulConceptApp onBack={onBack} SimulQuizApp={SimulApp} />
+    </AuthGate>
+  );
+}
 import DiagnosticQuiz from './lib/DiagnosticQuiz.jsx';
 import { useI18n } from './lib/i18n.jsx';
 import CuriosityApp from './Curiosity.jsx';
@@ -175,8 +210,8 @@ window.fetch = function (url, options) {
 };
 
 // App version — increment with each commit
-const TENALI_VERSION = '1.0.86'
-const TENALI_BUILD_DATE = '2026-05-03 18:28 IST'
+const TENALI_VERSION = '1.0.87'
+const TENALI_BUILD_DATE = '2026-07-08 12:52 IST'
 // ─── Auth helpers ───────────────────────────────────────────────────────────
 // Tiny pub/sub on top of localStorage so AuthMenu and AuthGate stay in sync.
 const AUTH_TOKEN_KEY = 'tenali-auth-token'
@@ -259,7 +294,13 @@ function AuthMenu({ t = (s) => s }) {
     window.addEventListener('keydown', onKey)
     const onNav = e => { setOpen(false) }
     window.addEventListener('tenali-navigate', onNav)
-    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('tenali-navigate', onNav) }
+    const onOpenAuth = () => setOpen(prev => !prev)
+    window.addEventListener('tenali:openAuth', onOpenAuth)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('tenali-navigate', onNav)
+      window.removeEventListener('tenali:openAuth', onOpenAuth)
+    }
   }, [])
 
   const navigateTo = (mode) => {
@@ -292,6 +333,7 @@ function AuthMenu({ t = (s) => s }) {
     <>
       <button
         type="button"
+        className="auth-menu-floating-btn"
         aria-label="Menu"
         onClick={() => setOpen(o => !o)}
         style={{
@@ -680,9 +722,9 @@ function ResultsTable({ results }) {
           {results.map((r, i) => (
             <tr key={i} className={r.correct ? 'row-correct' : 'row-wrong'}>
               <td>{i + 1}</td>
-              <td>{r.question}</td>
-              <td>{r.userAnswer}</td>
-              <td>{r.correct ? `✓ (${r.correctAnswer})` : `✗ (${r.correctAnswer})`}</td>
+              <td>{r.question || r.prompt || `Question ${i + 1}`}</td>
+              <td>{r.userAnswer || '-'}</td>
+              <td>{r.correct ? `✓ (${r.correctAnswer || r.display || ''})` : `✗ (${r.correctAnswer || r.display || 'Ans'})`}</td>
               {hasCarries && (
                 <td style={{ fontSize: '0.8rem', whiteSpace: 'pre-line' }}>
                   {r.userCarries && <span>Yours: {r.userCarries}</span>}
@@ -1072,7 +1114,7 @@ const enhanceFinishedScreen = (node, sessionGoal) => {
  * structured card with highlighted answer and formatted explanation.
  * For normal correct/wrong feedback, renders inline text.
  */
-function renderFeedback(feedback, isCorrect) {
+export function renderFeedback(feedback, isCorrect) {
   if (!feedback) return null
   const isSolve = isCorrect === false && feedback.startsWith('Solution:')
   if (!isSolve) {
@@ -41597,261 +41639,6 @@ function DragDropCountingApp({ onBack }) {
   )
 }
 
-function CoordGeomInteractiveApp({ onBack }) {
-  const [started, setStarted] = useState(false);
-  const [finished, setFinished] = useState(false);
-  const [round, setRound] = useState(0);
-  const [numQuestions, setNumQuestions] = useState('10');
-  const [difficulty, setDifficulty] = useState('easy');
-  const [score, setScore] = useState(0);
-
-  const [currentQ, setCurrentQ] = useState(null);
-  const [dartPos, setDartPos] = useState(null); // {x, y}
-  const [textAnswer, setTextAnswer] = useState(''); // for distance, gradient, etc.
-  const [revealed, setRevealed] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(null);
-  const [feedback, setFeedback] = useState('');
-  const [results, setResults] = useState([]);
-
-  useProgressSubmit(revealed, isCorrect, 'coordgeom', currentQ?.id);
-  const timer = useTimer();
-
-  const loadQuestion = async () => {
-    try {
-      const r = await fetch(`${API}/coordgeom-api/question?difficulty=${difficulty}`);
-      if (!r.ok) throw new Error('Server error');
-      const data = await r.json();
-      setCurrentQ(data);
-      setDartPos(null);
-      setTextAnswer('');
-      setRevealed(false);
-      setIsCorrect(null);
-      setFeedback('');
-      timer.start();
-    } catch (e) {
-      console.error(e);
-      setFeedback('Error loading question. ' + e.message);
-    }
-  };
-
-  const startGame = () => {
-    const qCount = parseInt(numQuestions) || 10;
-    setNumQuestions(String(qCount));
-    setStarted(true);
-    setFinished(false);
-    setRound(1);
-    setScore(0);
-    setResults([]);
-    loadQuestion();
-  };
-
-  // CoordinateGrid handles clicks internally
-
-  const handleCheck = async () => {
-    if (revealed) return;
-    if (currentQ?.type === 'coord' && !dartPos) return;
-    if (currentQ?.type !== 'coord' && !textAnswer.trim()) return;
-
-    const timeTaken = timer.stop();
-    setRevealed(true);
-
-    try {
-      const payload = {
-        ...currentQ,
-        userAnswer: currentQ.type === 'coord' ? `(${dartPos.x}, ${dartPos.y})` : textAnswer
-      };
-      const r = await fetch(`${API}/coordgeom-api/check`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await r.json();
-
-      const correct = data.correct;
-      setIsCorrect(correct);
-      setFeedback(data.message + (correct ? ` ${data.display} is correct!` : ` The answer was ${data.display}.`));
-      if (correct) setScore(s => s + 1);
-
-      setResults(prev => [...prev, {
-        question: currentQ.prompt,
-        userAnswer: payload.userAnswer,
-        correctAnswer: data.display,
-        correct,
-        time: timeTaken
-      }]);
-    } catch (e) {
-      console.error(e);
-      setFeedback('Error checking answer.');
-    }
-  };
-
-  const handleSolve = () => {
-    if (revealed || !currentQ) return;
-    timer.stop();
-    setRevealed(true);
-    setIsCorrect(false);
-    setFeedback(`Solution: The answer is ${currentQ.display}.`);
-    setResults(prev => [...prev, {
-      question: currentQ.prompt,
-      userAnswer: '—',
-      correctAnswer: currentQ.display,
-      correct: false,
-      time: 0
-    }]);
-  };
-
-  const nextQuestion = () => {
-    if (round >= Number(numQuestions)) {
-      setFinished(true);
-    } else {
-      setRound(r => r + 1);
-      loadQuestion();
-    }
-  };
-
-  if (!started) {
-    const diffLabels = { easy: 'Easy — Foundations', medium: 'Medium — Lengths', hard: 'Hard — Slopes & Eqs', extrahard: 'Extra Hard — Advanced' };
-    return (
-      <div style={{ minHeight: '100vh', background: '#181512', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
-        <div style={{
-          background: '#2D2520', border: '1.5px solid #4A4038', borderRadius: '28px',
-          boxShadow: '0 20px 40px rgba(0,0,0,.45)', padding: '48px 40px', maxWidth: '720px', width: '100%',
-          textAlign: 'center', position: 'relative'
-        }}>
-          <button onClick={onBack} style={{
-            position: 'absolute', top: '24px', left: '24px', background: 'transparent',
-            border: '1px solid #5B5048', borderRadius: '6px', padding: '6px 14px',
-            color: '#A89C93', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer'
-          }}>← Home</button>
-
-          <h1 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontWeight: 700, fontSize: '48px', color: '#F4F1ED', margin: '0 0 12px', lineHeight: 1.1 }}>
-            Coordinate Geometry
-          </h1>
-          <p style={{ color: '#988D84', fontSize: '0.9rem', margin: '0 0 40px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
-            Choose a level and solve coordinate geometry challenges
-          </p>
-          <p style={{ color: '#988D84', fontSize: '0.9rem', margin: '0 0 24px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
-            Practice coordinate geometry!
-          </p>
-
-          <div style={{ marginBottom: '24px' }}>
-            <h3 style={{ color: '#F4F1ED', fontSize: '0.9rem', margin: '0 0 16px', fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
-              Select Difficulty:
-            </h3>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '12px' }}>
-              {['easy', 'medium', 'hard', 'extrahard'].map(d => (
-                <button key={d} onClick={() => setDifficulty(d)} style={{
-                  background: difficulty === d ? '#F08C46' : 'transparent',
-                  border: difficulty === d ? '1px solid #F08C46' : '1px solid #5B5048',
-                  borderRadius: '50px', padding: '8px 16px',
-                  color: difficulty === d ? '#FFF' : '#988D84', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer'
-                }}>
-                  {diffLabels[d]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <label style={{ color: '#988D84', fontSize: '0.85rem', margin: '0 0 12px', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
-              How many questions?
-            </label>
-            <input type="text" value={numQuestions} onChange={(e) => { const v = e.target.value; if (v === '' || /^\d+$/.test(v)) setNumQuestions(v) }} style={{
-              background: '#463B34', border: '1px solid #5B5048', borderRadius: '6px',
-              padding: '10px', color: '#FFF', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '0.9rem',
-              width: '100px', textAlign: 'center', outline: 'none'
-            }} placeholder="10" />
-          </div>
-
-          <button onClick={startGame} style={{
-            background: '#F08C46', border: 'none', borderRadius: '6px',
-            padding: '10px 24px', color: '#FFF', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer'
-          }}>
-            Start Quiz
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (finished) {
-    return (
-      <QuizLayout title="Coordinate Geometry" onBack={onBack}>
-        <ResultsView score={score} total={Number(numQuestions)} results={results} onRetry={startGame} />
-      </QuizLayout>
-    );
-  }
-
-  return (
-    <QuizLayout title="Coordinate Geometry" onBack={onBack}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, padding: '0 4px' }}>
-          <span style={{ color: 'var(--clr-muted)', fontSize: '0.85rem' }}>Round {round} / {numQuestions}</span>
-          <span style={{ fontWeight: 700, color: 'var(--clr-accent)' }}>Score: {score}</span>
-        </div>
-
-        <h3 className="prompt-text">{currentQ?.prompt}</h3>
-
-        <div style={{ margin: '20px auto', display: 'flex', justifyContent: 'center' }}>
-          <CoordinateGrid
-            points={currentQ?.points || []}
-            onClick={currentQ?.type === 'coord' && !revealed ? (pos) => setDartPos(pos) : undefined}
-            cursorType={currentQ?.type === 'coord' ? 'crosshair' : 'default'}
-            userTarget={dartPos}
-            revealedTarget={revealed && !isCorrect && currentQ?.type === 'coord' ? { x: currentQ.ansX, y: currentQ.ansY } : null}
-            connectPoints={true}
-            width={350}
-            height={350}
-          />
-        </div>
-
-        {currentQ?.type === 'coord' ? (
-          dartPos && !revealed && (
-            <p style={{ color: 'var(--clr-muted)', fontSize: '0.85rem', margin: '8px 0 0' }}>
-              Selected Point: ({dartPos.x}, {dartPos.y})
-            </p>
-          )
-        ) : (
-          <div style={{ marginTop: 20 }}>
-            <input
-              type="text"
-              className="answer-input"
-              placeholder={currentQ?.type === 'equation' ? 'e.g. y=-3/4x+2' : currentQ?.type === 'fraction' ? 'e.g. -3/4' : 'e.g. 13'}
-              value={textAnswer}
-              onChange={e => !revealed && setTextAnswer(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleCheck(); }}
-              disabled={revealed}
-            />
-          </div>
-        )}
-
-        <div className="button-row" style={{ marginTop: 20, justifyContent: 'center', gap: '10px' }}>
-          {!revealed ? (
-            <>
-              <button className="btn" onClick={handleCheck} disabled={currentQ?.type === 'coord' ? !dartPos : !textAnswer.trim()}>
-                Check Answer
-              </button>
-              <button className="btn" onClick={handleSolve} style={{ background: 'transparent', border: '1px solid var(--clr-border)', color: 'var(--clr-muted)' }}>
-                💡 Solve
-              </button>
-            </>
-          ) : (
-            <button className="btn" onClick={nextQuestion}>
-              Next Question
-            </button>
-          )}
-        </div>
-
-        {revealed && (
-          <div style={{ marginTop: 20 }}>
-            {renderFeedback(feedback, isCorrect)}
-          </div>
-        )}
-      </div>
-    </QuizLayout>
-  );
-}
-
 function DartBoardApp({ onBack }) {
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -42422,6 +42209,18 @@ function App() {
     }
   })
 
+  // Current view when mode is null: 'landing' (full landing page) or 'puzzles' (90+ puzzles grid)
+  const [currentView, setCurrentView] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('mode')) return 'puzzles';
+      if (params.get('view') === 'puzzles') return 'puzzles';
+      return 'landing';
+    } catch {
+      return 'landing';
+    }
+  })
+
   // Install monsters interceptor once on mount.
   // It wraps window.fetch to detect wrong answers and dispatch a CustomEvent
   // for MonsterToast (and Hall, when added). Spec §5.
@@ -42511,24 +42310,55 @@ function App() {
     }
   }, [])
 
-  // Synchronize browser URL query parameters dynamically with the active mode state
+  // Synchronize browser URL query parameters dynamically with the active mode and view state
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       const currentMode = params.get('mode');
+      const currentParamView = params.get('view');
       if (mode) {
         if (currentMode !== mode) {
-          window.history.replaceState({}, '', `${BASE}/?mode=${mode}`);
+          window.history.pushState({ mode }, '', `${BASE}/?mode=${mode}`);
         }
       } else {
-        if (currentMode) {
-          window.history.replaceState({}, '', `${BASE}/`);
+        if (currentView === 'puzzles') {
+          if (currentParamView !== 'puzzles' || currentMode) {
+            window.history.replaceState({}, '', `${BASE}/?view=puzzles`);
+          }
+        } else {
+          if (currentMode || currentParamView) {
+            window.history.replaceState({}, '', `${BASE}/`);
+          }
         }
       }
     } catch (e) {
       console.error('Failed to sync URL mode:', e);
     }
-  }, [mode]);
+  }, [mode, currentView]);
+
+  // Listen for browser Back/Forward navigation (popstate) to restore mode and view
+  useEffect(() => {
+    const handlePopState = () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlMode = params.get('mode') || null;
+        const urlView = params.get('view') || (urlMode ? 'puzzles' : 'landing');
+        setMode(urlMode);
+        setCurrentView(urlView === 'puzzles' ? 'puzzles' : 'landing');
+        if (urlMode === 'angles') {
+          setLearningPhase('select');
+        } else {
+          setLearningPhase(null);
+        }
+        setIsGoalMode(urlMode === 'goalpractice');
+      } catch (e) {
+        console.error('Failed to handle popstate:', e);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const { user } = useAuth()
   const [completedTopics, setCompletedTopics] = useState(() => {
@@ -44611,7 +44441,14 @@ function App() {
                   {/* Image Types */}
                   {(question.type === 'image-numpad' || question.type === 'image-option') && question.image && (
                     <div style={{ textAlign: 'center', margin: '0 auto 16px' }}>
-                      <img src={question.image} alt="Riddle" style={{ maxWidth: '100%', maxHeight: 280, width: 'auto', height: 'auto', objectFit: 'contain', borderRadius: 'var(--radius)', border: '1px solid var(--clr-border)', background: 'var(--clr-input)' }} />
+                      <img
+                        src={withBase(question.image.startsWith('/') ? question.image : `/${question.image}`)}
+                        alt={question.title || 'Visual Riddle'}
+                        onError={(e) => {
+                          console.warn(`[Math Riddles] Failed to load riddle image: ${e.target.src}`);
+                        }}
+                        style={{ maxWidth: '100%', maxHeight: 280, width: 'auto', height: 'auto', objectFit: 'contain', borderRadius: 'var(--radius)', border: '1px solid var(--clr-border)', background: 'var(--clr-input)' }}
+                      />
                     </div>
                   )}
 
@@ -44656,7 +44493,11 @@ function App() {
                           }}
                         >
                           {question.optionImages && question.optionImages[i] ? (
-                            <img src={question.optionImages[i]} alt={opt} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
+                            <img
+                              src={withBase(question.optionImages[i].startsWith('/') ? question.optionImages[i] : `/${question.optionImages[i]}`)}
+                              alt={opt}
+                              style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }}
+                            />
                           ) : opt}
                         </button>
                       ))}
@@ -44784,7 +44625,9 @@ function App() {
     polyfactor: PolyFactorApp,     // Polynomial factoring
     primefactor: PrimeFactorApp,   // Prime factorization
     qformula: QFormulaApp,         // Quadratic formula
+    'qformula-concept': QFormulaConceptMode, // Quadratic formula — 5-stage concept lab
     simul: SimulApp,               // Simultaneous equations
+    'simul-concept': SimulConceptMode,       // Simultaneous equations — 5-stage concept lab
     funceval: FuncEvalApp,         // Function evaluation
     lineq: LineEqApp,              // Line equation
     basicarith: BasicArithApp,     // Basic arithmetic (+, −, ×)
@@ -44863,10 +44706,11 @@ function App() {
     polygym: PolyGymApp,           // Polynomials Gym — arithmetic → monomial algebra (MCQ)
     treasurehunt: TreasureHuntApp, // Treasure Hunt — solve & seek grid game
     // matrixmystics mode removed — Matrix Mystics content now embedded in LinearAlgebraApp's mission quiz
-    trackProgress: null,
+    trackProgress: ProgressTrackerApp,
     riddle: RiddleApp,              // Math Riddles
     'water-jug-lab': WaterJugLab,
     'equation-crafting-lab': EquationCraftingLab,
+    pathmap: PathMap, // Learning Path (prerequisite graph & personalized path)
   }
 
   // Get the component to render (or null if mode not set)
@@ -44945,10 +44789,6 @@ function App() {
       );
     }
 
-    if (mode === 'trackProgress') {
-      return <ProgressTrackerApp onBack={() => setMode(null)} />;
-    }
-
     if (ActiveApp) {
       const appEl = (
         <ActiveApp
@@ -44991,7 +44831,12 @@ function App() {
 
     return (
       <Home
+        onBackToLanding={() => {
+          setCurrentView('landing');
+          try { window.history.replaceState({}, '', `${BASE}/`); } catch (e) {}
+        }}
         onSelect={(key) => {
+          setCurrentView('puzzles');
           if (key === 'goalpractice') {
             setMode('goalpractice');
           } else if (key === 'angles') {
@@ -45039,6 +44884,7 @@ function App() {
       multiply: 'Multiplication Tables', vocab: 'Vocabulary', spot: 'Twin Hunt',
       sqrt: 'Square Root', polymul: 'Polynomial Multiplication', polyfactor: 'Polynomial Factoring',
       primefactor: 'Prime Factorization', qformula: 'Quadratic Formula', simul: 'Simultaneous Equations',
+      'qformula-concept': 'Quadratics: Concept Lab', 'simul-concept': 'Sim. Equations: Concept Lab',
       funceval: 'Functions', lineq: 'Line Equations', basicarith: 'Arithmetic',
       fractionadd: 'Fractions', surds: 'Surds', indices: 'Indices',
       sequences: 'Sequences & Series', ratio: 'Ratio & Proportion', percent: 'Percentages',
@@ -45407,17 +45253,121 @@ function App() {
     )
   }
 
+  // ========== LANDING PAGE VIEW (Default when mode === null and currentView === 'landing') ==========
+  if (mode === null && currentView === 'landing') {
+    return (
+      <div className="landing-view-wrapper">
+        <LandingPage
+          onExplorePuzzles={() => {
+            setCurrentView('puzzles');
+            try { window.history.replaceState({}, '', `${BASE}/?view=puzzles`); } catch (e) {}
+          }}
+          onSelectTopic={(topicKey) => {
+            setCurrentView('puzzles');
+            if (topicKey === 'goalpractice') {
+              setMode('goalpractice');
+            } else if (topicKey === 'angles') {
+              setIsGoalMode(false);
+              handleSelectMode(topicKey);
+            } else {
+              setMode(topicKey);
+              setIsGoalMode(false);
+            }
+          }}
+          currentView={currentView}
+          onViewChange={(v) => {
+            setCurrentView(v);
+            try {
+              if (v === 'puzzles') {
+                window.history.replaceState({}, '', `${BASE}/?view=puzzles`);
+              } else {
+                window.history.replaceState({}, '', `${BASE}/`);
+              }
+            } catch (e) {}
+          }}
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
+        {/* Misconception Monsters toast & hall overlays */}
+        <MonsterToast
+          onOpenHall={() => setHallOpen(true)}
+          onTap={() => setHallOpen(true)}
+        />
+        <HallPanel
+          open={hallOpen}
+          onClose={() => {
+            setHallOpen(false);
+            setGuidedSolverMonsterId(null);
+          }}
+          monsterLog={monsterLog}
+          initialSelectedId={guidedSolverMonsterId}
+          initialGuidedSolver={!!guidedSolverMonsterId}
+          onStartCure={(monsterId, topic) => {
+            setHallOpen(false);
+            setGuidedSolverMonsterId(null);
+            setActiveCure({ monsterId, topic });
+          }}
+          onOpenGuidedSolver={(monsterId) => {
+            setGuidedSolverMonsterId(monsterId);
+          }}
+          onCloseSolver={() => {
+            setGuidedSolverMonsterId(null);
+          }}
+        />
+        {activeCure && (
+          <CureFlow
+            monsterId={activeCure.monsterId}
+            topic={activeCure.topic}
+            onCancel={() => setActiveCure(null)}
+            onComplete={() => {
+              try { setMonsterLog(loadMonsterLog()); } catch {}
+              setActiveCure(null);
+              setHallOpen(true);
+            }}
+            onOpenGuidedSolver={(monsterId) => {
+              setActiveCure(null);
+              setGuidedSolverMonsterId(monsterId);
+              setHallOpen(true);
+            }}
+          />
+        )}
+        <ReflectionJournal />
+      </div>
+    );
+  }
+
   return (
-    <div className="app-shell">
+    <div className="app-shell" style={{ paddingTop: mode === null ? 0 : undefined }}>
+      {mode === null && (
+        <div style={{ marginBottom: 20, width: '100%' }}>
+          <LandingNavbar
+            currentView={currentView}
+            onViewChange={(v) => {
+              setCurrentView(v);
+              try {
+                if (v === 'puzzles') {
+                  window.history.replaceState({}, '', `${BASE}/?view=puzzles`);
+                } else {
+                  window.history.replaceState({}, '', `${BASE}/`);
+                }
+              } catch (e) {}
+            }}
+            theme={theme}
+            toggleTheme={toggleTheme}
+          />
+        </div>
+      )}
       {mode === null && showTour && <OnboardingTour onFinish={() => { localStorage.setItem('tenali_tour_seen', 'true'); setShowTour(false) }} mode={mode} />}
       {mode === null && (
         <button className="guide-toggle" onClick={() => setShowTour(true)} title="Take a Tour">
           🧭 Guide
         </button>
       )}
-      <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
-        {theme === 'dark' ? '☀️' : '🌙'}
-      </button>
+      {mode !== null && (
+        <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+      )}
       <style>{`
         .monster-interruption-popup {
           position: fixed;
@@ -45476,6 +45426,9 @@ function App() {
         onOpenHall={() => setHallOpen(true)}
         onTap={() => setHallOpen(true)}
       />
+      {mode && mode !== 'pathmap' && (
+        <PmSuggestIcon moduleId={mode} onNavigate={(id) => setMode(id)} />
+      )}
       <HallPanel
         open={hallOpen}
         onClose={() => {
@@ -45527,10 +45480,11 @@ function App() {
  * @param {Object} props
  * @param {Function} props.onSelect - Callback when user selects a quiz: receives mode key (e.g., 'gk')
  */
-function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isGoalSelection = false, onBack }) {
+function Home({ onSelect, onBackToLanding, completedTopics = [], goldMastery = [], coins = 0, isGoalSelection = false, onBack }) {
   const [showAbout, setShowAbout] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [pmOpen, setPmOpen] = useState(false)
   const featuredApps = FEATURED_TILES
   const mathLabEntry = MATH_LAB_ENTRY
   const geocraftEntry = GEOCRAFT_ENTRY
@@ -45562,18 +45516,7 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
   const isSearching = search.trim() !== ''
   const matchFilter = (a) => a.name.toLowerCase().includes(search.toLowerCase()) || a.subtitle.toLowerCase().includes(search.toLowerCase())
   
-  // Under Goal Practice mode, we include Random Mix & Custom Lesson at the top of the grid list (omitting Gym since it does not support goals)
-  const goalFeatured = [
-    { key: 'randommix', name: 'Random Mix', subtitle: 'Adaptive cross-topic quiz', color: 'featured' },
-    { key: 'custom', name: 'Custom Lesson', subtitle: 'Build your own mixed quiz', color: 'featured' },
-  ]
-  
-  const filteredGoalFeatured = isSearching ? goalFeatured.filter(matchFilter) : goalFeatured
-  const filteredFeatured = isSearching ? featuredApps.filter(matchFilter) : featuredApps
   const filteredRegular = isSearching ? regularApps.filter(matchFilter) : regularApps
-  
-  // Decide which items to show on the main grid list
-  const displayGridApps = isGoalSelection ? filteredRegular : [...filteredRegular]
   const filteredHamburgerApps = isSearching ? hamburgerApps.filter(matchFilter) : hamburgerApps
 
   // Grid layout tracking (for responsive display)
@@ -45595,7 +45538,7 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
   }, [])
 
   // Calculate number of rows for display (for grid dimension label at bottom)
-  const rows = Math.ceil(displayGridApps.length / (cols || 1))
+  const rows = Math.ceil(filteredRegular.length / (cols || 1))
 
   return (
     <>
@@ -45611,12 +45554,23 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
             ← Back to Dashboard
           </button>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '4px', paddingTop: isGoalSelection ? '44px' : '0' }}>
+        {!isGoalSelection && onBackToLanding && (
+          <button onClick={onBackToLanding} style={{
+            position: 'absolute', top: '8px', left: '0', display: 'flex', alignItems: 'center', gap: '6px',
+            background: 'var(--clr-card)', border: '1.5px solid var(--clr-border)', color: 'var(--clr-text)',
+            padding: '6px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)',
+            fontSize: '0.85rem', fontWeight: '500', transition: 'all var(--transition)'
+          }} onMouseEnter={e => e.target.style.background = 'var(--clr-hover-strong)'}
+             onMouseLeave={e => e.target.style.background = 'var(--clr-card)'}>
+            ← Overview
+          </button>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '4px', paddingTop: (isGoalSelection || onBackToLanding) ? '44px' : '0' }}>
           <img src="/tenali.png" alt="Tenali Raman" style={{ width: '80px', height: 'auto', flexShrink: 0 }} />
           <div>
-            <h1 style={{ margin: 0 }}>{isGoalSelection ? 'Goal Practice' : 'Tenali'}</h1>
+            <h1 style={{ margin: 0 }}>{isGoalSelection ? 'Goal Practice' : 'Tenali Puzzles & Games'}</h1>
             <p className="subtitle" style={{ margin: 0 }}>
-              {isGoalSelection ? 'Select a topic to practice with custom goals' : 'Choose a learning game to begin'}
+              {isGoalSelection ? 'Select a topic to practice with custom goals' : 'Explore 90+ algorithmically generated math and reasoning games'}
             </p>
           </div>
         </div>
@@ -45645,6 +45599,7 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
               onMouseLeave={e => e.target.style.background = 'none'}>
               <strong style={{ color: 'var(--clr-accent)' }}>ℹ️ About Tenali</strong>
             </button>
+            <PmHamburgerItem onOpen={() => { setMenuOpen(false); setPmOpen(true); }} />
             {/* Visual Learning Universe & GeoCraft pinned at top of hamburger menu */}
             {[mathLabEntry, geocraftEntry].map(app => (
               <button key={app.key} onClick={() => {
@@ -45710,18 +45665,6 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
               </button>
             ))}
 
-            {featuredApps.map(app => (
-              <button key={app.key} onClick={() => { setMenuOpen(false); onSelect(app.key) }} style={{
-                display: 'block', width: '100%', textAlign: 'left', padding: '10px 16px',
-                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text)',
-                fontFamily: 'var(--font-body)', fontSize: '0.95rem', transition: 'background var(--transition)'
-              }} onMouseEnter={e => e.target.style.background = 'var(--clr-hover-strong)'}
-                onMouseLeave={e => e.target.style.background = 'none'}>
-                <strong style={{ color: 'var(--clr-accent)' }}>{app.name}</strong>
-                <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--clr-text-soft)', marginTop: '2px' }}>{app.subtitle}</span>
-              </button>
-            ))}
-
             <div style={{ height: '1px', background: 'var(--clr-border)', margin: '4px 0' }} />
 
             <button onClick={() => { setMenuOpen(false); window.location.href = withBase('/playground'); }} style={{
@@ -45734,8 +45677,7 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
               <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--clr-text-soft)', marginTop: '2px' }}>Run code in 50+ languages</span>
             </button>
 
-            {/* eslint-disable-next-line no-restricted-syntax -- relative navigation to /language subpath, not a base-rooted path */}
-            <button onClick={() => { setMenuOpen(false); window.location.href = window.location.pathname.replace(/\/$/, '') + '/language'; }} style={{
+            <button onClick={() => { setMenuOpen(false); onSelect('language'); }} style={{
               display: 'block', width: '100%', textAlign: 'left', padding: '10px 16px',
               background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text)',
               fontFamily: 'var(--font-body)', fontSize: '0.95rem', transition: 'background var(--transition)'
@@ -45791,6 +45733,10 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
           </button>
         </div>
       )}
+      {!search && !isGoalSelection && <PmQuestBanner onSelect={onSelect} />}
+      {!search && !isGoalSelection && (
+        <DailyWarmupCard completedTopics={completedTopics} apiBase={API} onSelectTopic={onSelect} />
+      )}
       <div className="search-bar-row">
         <input
           id="tour-search-bar"
@@ -45801,8 +45747,9 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
           onChange={e => setSearch(e.target.value)}
         />
       </div>
+      {!search && !isGoalSelection && <PmHomeSection onSelect={onSelect} onOpenGoalPicker={() => setPmOpen(true)} />}
       <div id="tour-home-grid" className="menu-grid" ref={gridRef}>
-        {displayGridApps.map((app) => {
+        {filteredRegular.map((app) => {
           const isGold = goldMastery && goldMastery.includes(app.key)
           const isCompleted = isStage3Completed(app.key, completedTopics)
           return (
@@ -45818,6 +45765,7 @@ function Home({ onSelect, completedTopics = [], goldMastery = [], coins = 0, isG
         })}
       </div>
       <div className="grid-dimension">{rows} × {cols}</div>
+      <PmGoalModal open={pmOpen} onClose={() => setPmOpen(false)} onSelect={onSelect} />
     </>
   )
 }
@@ -50523,6 +50471,7 @@ function ColumnSubtractionApp({ onBack, initialDifficulty, initialNumQuestions, 
  * @param {Function} props.onBack - Callback to return to home menu
  */
 function AdditionApp({ onBack, completedTopics = [], goldMastery = [], markTopicCompleted, setTransferTopic, setMode, initialMode, initialDifficulty, initialNumQuestions, initialStarted, isGoalMode = false }) {
+  const [showComicAddition, setShowComicAddition] = useState(false)
   // Mode selection: 'standard' (default), 'counting' (Visual Counting), 'scale' (Balance Scale)
   const [additionMode, setAdditionMode] = useState(initialMode || 'standard')
   // Difficulty level: 'easy' (1-digit), 'medium' (2-digit), 'hard' (3-digit), 'extrahard' (4-digit)
@@ -50904,6 +50853,10 @@ const fetchQuestion = async (selectedDifficulty = difficulty) => {
   const diffLabels = { easy: 'Easy — 1 digit', medium: 'Medium — 2 digits', hard: 'Hard — 3 digits', extrahard: 'Extra Hard — 4 digits' }
   const curAdaptLevel = adaptiveLevel(adaptScore)
 
+  if (showComicAddition) {
+    return <ComicAdditionApp onBack={() => setShowComicAddition(false)} />
+  }
+
   if (!started && !finished) {
     return (
       <div style={{ minHeight: '100vh', background: '#181512', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
@@ -50972,6 +50925,13 @@ const fetchQuestion = async (selectedDifficulty = difficulty) => {
             padding: '10px 24px', color: '#FFF', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer'
           }}>
             Start Quiz
+          </button>
+
+          <button type="button" onClick={() => setShowComicAddition(true)} style={{
+            marginTop: '16px', background: 'transparent', border: '1px solid #5B5048', borderRadius: '6px',
+            padding: '10px 24px', color: '#C9BFB6', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer'
+          }}>
+            Comic Addition — Story Mode
           </button>
         </div>
         {isStage3Completed('addition', completedTopics) && (
@@ -52129,6 +52089,7 @@ function GymQuiz({ title, subtitle, typeKeys, welcomeText, algebraInput, onBack 
  * @param {Function} props.onBack - Callback to return to home menu
  */
 function BasicArithApp({ onBack, completedTopics = [], goldMastery = [], markTopicCompleted, setTransferTopic, setMode, isGoalMode = false }) {
+  const [showCarJourney, setShowCarJourney] = useState(false)
   // Difficulty level: 'easy', 'medium', 'hard', 'extrahard'
   const [difficulty, setDifficulty] = useState(() => cjTakeReco('basicarith', CJ_RECO_DIFFS) || 'easy')
   // Adaptive mode enabled?
@@ -52369,6 +52330,10 @@ const fetchQuestion = async () => {
   const diffLabels = { easy: 'Easy — 1 digit', medium: 'Medium — 2 digits', hard: 'Hard — 3 digits', extrahard: 'Extra Hard — 4 digits' }
   const curAdaptLevel = adaptiveLevel(adaptScore)
 
+  if (showCarJourney) {
+    return <CarJourneyApp onBack={() => setShowCarJourney(false)} setMode={setMode} />
+  }
+
   return (
     <QuizLayout title="Origin" subtitle="Add, subtract, multiply & divide positive & negative numbers" onBack={onBack} timer={started && !finished ? timer : null}>
       {!started && !finished && <div className="welcome-box">
@@ -52435,6 +52400,12 @@ const fetchQuestion = async () => {
           <input className="answer-input question-count-input" type="text" value={numQuestions} onChange={e => { const v = e.target.value; if (v === '' || (/^\d+$/.test(v) && Number(v) <= 100)) setNumQuestions(v) }} />
         </div>
         <div className="button-row"><button onClick={startQuiz}>Start Quiz</button></div>
+        <button type="button" onClick={() => setShowCarJourney(true)} style={{
+          marginTop: '16px', background: 'transparent', border: '1px solid var(--clr-border)', borderRadius: '6px',
+          padding: '10px 24px', color: 'var(--clr-text-soft)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer'
+        }}>
+          The Car Journey — 16-stop math road trip
+        </button>
       </div>}
       {started && !finished && <>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
@@ -54406,7 +54377,8 @@ const loadQuestion = async (excludeIds) => {
 /* ── Fraction Addition App ────────────────────────────────────── */
 function FractionsPage(props) {
   const [learningPhase, setLearningPhase] = useState('select'); // 'select', 'learn', 'test'
-  
+  const [showIdliVada, setShowIdliVada] = useState(false);
+
   const [showQuizBelow, setShowQuizBelow] = useState(false);
   const quizRef = useRef(null);
 
@@ -54416,6 +54388,10 @@ function FractionsPage(props) {
       quizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   };
+
+  if (showIdliVada) {
+    return <IdliVadaSambharApp onBack={() => setShowIdliVada(false)} />
+  }
 
   if (learningPhase === 'select') {
     return (
@@ -54444,6 +54420,12 @@ function FractionsPage(props) {
               <span style={{ color: 'var(--clr-text-soft)' }}>Test what you know</span>
             </button>
           </div>
+          <button type="button" onClick={() => setShowIdliVada(true)} style={{
+            marginTop: '28px', background: 'transparent', border: '1px solid #d99b2b', borderRadius: '12px',
+            padding: '12px 24px', color: 'var(--clr-text)', fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer'
+          }}>
+            Idli Vada Sambhar — multiples & LCM game
+          </button>
         </div>
       </div>
     );
@@ -55243,6 +55225,7 @@ function makeQuizApp({ title, subtitle, apiPath, diffLabels, placeholders, tip, 
     const [loading, setLoading] = useState(false)
     const [loadError, setLoadError] = useState('')
     const [revealed, setRevealed] = useState(false)
+    const [revealedCorrectAnswer, setRevealedCorrectAnswer] = useState('')
   const [sessionGoal, setSessionGoal] = useState(isGoalMode ? 'speed' : 'standard')
   useEffect(() => {
     if (!isGoalMode) {
@@ -55258,6 +55241,7 @@ function makeQuizApp({ title, subtitle, apiPath, diffLabels, placeholders, tip, 
     // Guards against double-submit and double-advance race conditions
     const submittedRef = useRef(false)
     const advancedRef = useRef(false)
+    const promotionTriggeredRef = useRef(false)
     // Tracks the in-flight question fetch so a newer loadQuestion() call (or
     // unmount) can cancel a still-pending older one — otherwise an
     // out-of-order response can land after a newer question and silently
@@ -55296,20 +55280,54 @@ function makeQuizApp({ title, subtitle, apiPath, diffLabels, placeholders, tip, 
       setLoadError('')
       try {
         const diff = effectiveDifficulty()
-        const r = await fetch(`${API}/${apiPath}/question?difficulty=${diff}&goal=${sessionGoal}`, { headers: { 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }, signal: controller.signal })
-        if (!r.ok) throw new Error(`Server returned ${r.status}`)
-        const data = await r.json()
-        // Defensive: a question must have a non-empty prompt to be displayable.
-        // If the API returns malformed data (missing prompt), surface a clear
-        // error instead of rendering an empty quiz pane.
-        if (!data || typeof data !== 'object' || !data.prompt) {
-          throw new Error('Question payload is missing a prompt')
+        const isMilestone = (questionNumber > 0 && questionNumber % 5 === 0) || promotionTriggeredRef.current
+        promotionTriggeredRef.current = false
+
+        const headers = { 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }
+
+        let data = null
+        if (isMilestone) {
+          try {
+            const excludeList = results.map(r => r.id || '').filter(Boolean).join(',')
+            const cr = await fetch(`${API}/conceptual-api/question?topic=${apiPath.replace('-api', '')}&difficulty=${diff}&exclude=${excludeList}&goal=${sessionGoal}`, {
+              headers,
+              signal: controller.signal
+            })
+            if (cr.ok) {
+              data = await cr.json()
+            } else {
+              console.warn(`Conceptual question not found or failed for topic: ${apiPath.replace('-api', '')}. Falling back to standard question.`)
+            }
+          } catch (err) {
+            if (err.name !== 'AbortError') console.error('Failed to fetch conceptual question, falling back:', err)
+          }
+        }
+
+        if (!data) {
+          const r = await fetch(`${API}/${apiPath}/question?difficulty=${diff}&goal=${sessionGoal}`, {
+            headers,
+            signal: controller.signal
+          })
+          if (!r.ok) throw new Error(`Server returned ${r.status}`)
+          data = await r.json()
+        }
+
+        // Map conceptual question schema to prompt if conceptual
+        if (data && data.isConceptual && data.question) {
+          data.prompt = data.question
+        }
+        if (!data || typeof data !== 'object') {
+          throw new Error('Question payload is invalid')
+        }
+        if (data.isConceptual && !data.prompt) {
+          throw new Error('Conceptual question payload is missing a prompt')
         }
         setQuestion(data)
         setAnswer('')
         setFeedback('')
         setIsCorrect(null)
         setRevealed(false)
+        setRevealedCorrectAnswer('')
         submittedRef.current = false
         advancedRef.current = false
         timer.start(sessionGoal, handleTimeout, getSpeedRunLimit(effectiveDifficulty ? effectiveDifficulty() : (difficulty || 'easy'), isAdaptive))
@@ -55329,6 +55347,7 @@ function makeQuizApp({ title, subtitle, apiPath, diffLabels, placeholders, tip, 
       setTotalQ(t); setScore(0); setQuestionNumber(1); setResults([]); setStarted(true); setFinished(false)
       setAdaptScore(0); adaptScoreRef.current = 0
       submittedRef.current = false; advancedRef.current = false
+      promotionTriggeredRef.current = false
     }
     useEffect(() => { if (started && !finished && questionNumber > 0) loadQuestion() }, [started, questionNumber])
     const advance = () => {
@@ -55368,34 +55387,50 @@ function makeQuizApp({ title, subtitle, apiPath, diffLabels, placeholders, tip, 
       if (submittedRef.current) return  // prevent double-submit (rapid Enter presses)
       submittedRef.current = true
       const timeTaken = timer.stop()
-      const payload = { ...question, [answerField || 'userAnswer']: answer.trim() }
+      const payload = question.isConceptual
+        ? { id: question.id, answerOption: answer.trim() }
+        : { ...question, [answerField || 'userAnswer']: answer.trim() }
+      const checkPath = question.isConceptual ? 'conceptual-api' : apiPath
       try {
-        const r = await fetch(`${API}/${apiPath}/check`, {
+        const r = await fetch(`${API}/${checkPath}/check`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : ''
+          },
           body: JSON.stringify({ ...payload, sessionGoal })
         })
         const data = await r.json()
+        const qPrompt = question.prompt || question.question || (question.n1 !== undefined ? `${question.n1} ${question.op || '+'} ${question.n2}` : title)
+        const corrAns = data.display || data.correctAnswerText || (data.correctAnswer !== undefined ? String(data.correctAnswer) : '') || data.answer || ''
         setIsCorrect(data.correct); setRevealed(true)
+        if (data.correctAnswer) setRevealedCorrectAnswer(data.correctAnswer)
         if (data.correct) setScore(s => s + 1)
         const coinMsg = (data.lil?.coinsEarned ?? 0) > 0 ? ` (+${data.lil.coinsEarned}🪙)` : ''
         if (!data.correct && sessionGoal === 'perfect') {
           // Perfect Solve: any wrong answer immediately ends the quiz
-          setFeedback(`❌ Wrong answer — Perfect Solve ended! Correct: ${data.display || ''}`)
+          setFeedback(`❌ Wrong answer — Perfect Solve ended! Correct: ${corrAns}`)
           timer.reset()
           setFinished(true)
-          setResults(prev => [...prev, { prompt: question.prompt, userAnswer: answer.trim(), correctAnswer: data.display, correct: false, time: timeTaken }])
+          setResults(prev => [...prev, { id: question.id, prompt: qPrompt, question: qPrompt, userAnswer: answer.trim(), correctAnswer: corrAns, correct: false, time: timeTaken }])
           return
         }
-        setFeedback(data.correct ? `✅ Correct!${coinMsg} ${data.display || ''}` : `❌ Incorrect. Answer: ${data.display || ''}`)
-        setResults(prev => [...prev, { prompt: question.prompt, userAnswer: answer.trim(), correctAnswer: data.display, correct: data.correct, time: timeTaken }])
+        setFeedback(data.correct ? `✅ Correct!${coinMsg} ${corrAns}` : `❌ Incorrect. Answer: ${corrAns}`)
+        setResults(prev => [...prev, { id: question.id, prompt: qPrompt, question: qPrompt, userAnswer: answer.trim(), correctAnswer: corrAns, correct: data.correct, time: timeTaken }])
         // Smooth adaptive adjustment
         if (isAdaptive) {
+          const oldStage = Math.min(3, Math.max(0, Math.floor(adaptScoreRef.current)))
           setAdaptScore(prev => {
             const next = data.correct
               ? Math.min(3, prev + 0.25)  // gentle climb on correct
               : Math.max(0, prev - 0.35)  // slightly steeper drop on wrong
             adaptScoreRef.current = next
+            
+            // Check for promotion
+            const newStage = Math.min(3, Math.max(0, Math.floor(next)))
+            if (newStage > oldStage) {
+              promotionTriggeredRef.current = true
+            }
             return next
           })
         }
@@ -55406,19 +55441,26 @@ function makeQuizApp({ title, subtitle, apiPath, diffLabels, placeholders, tip, 
       if (!question || revealed) return
       submittedRef.current = true
       timer.stop()
-      const payload = { ...question, [answerField || 'userAnswer']: '', solve: true }
+      const payload = question.isConceptual
+        ? { id: question.id, answerOption: '', solve: true }
+        : { ...question, [answerField || 'userAnswer']: '', solve: true }
+      const checkPath = question.isConceptual ? 'conceptual-api' : apiPath
       try {
-        const r = await fetch(`${API}/${apiPath}/check`, {
+        const r = await fetch(`${API}/${checkPath}/check`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : ''
+          },
           body: JSON.stringify({ ...payload, sessionGoal })
         })
         const data = await r.json()
         setIsCorrect(false); setRevealed(true)
-        const display = data.display || data.correctAnswer || data.answer || ''
+        const qPrompt = question.prompt || question.question || (question.n1 !== undefined ? `${question.n1} ${question.op || '+'} ${question.n2}` : title)
+        const display = data.display || data.correctAnswerText || (data.correctAnswer !== undefined ? String(data.correctAnswer) : '') || data.answer || ''
         const explanation = data.explanation || ''
         setFeedback(`Solution: ${display}${explanation ? '\n' + explanation : ''}`)
-        setResults(prev => [...prev, { prompt: question.prompt, userAnswer: '(solved)', correctAnswer: display, correct: false, time: 0 }])
+        setResults(prev => [...prev, { id: question.id, prompt: qPrompt, question: qPrompt, userAnswer: '(solved)', correctAnswer: display, correct: false, time: 0 }])
       } catch (e) { submittedRef.current = false; console.error(`Failed to solve ${title}:`, e) }
     }
 
@@ -55433,6 +55475,21 @@ function makeQuizApp({ title, subtitle, apiPath, diffLabels, placeholders, tip, 
         setAdaptScore(prev => { const next = Math.max(0, prev - 0.35); adaptScoreRef.current = next; return next })
       }
     }
+
+    useEffect(() => {
+      if (!question || !question.options || revealed) return
+      const h = (e) => {
+        const key = e.key.toUpperCase()
+        if (['A', 'B', 'C', 'D'].includes(key)) {
+          setAnswer(key)
+        } else if (['1', '2', '3', '4'].includes(key)) {
+          const idx = Number(key) - 1
+          setAnswer(['A', 'B', 'C', 'D'][idx])
+        }
+      }
+      window.addEventListener('keydown', h)
+      return () => window.removeEventListener('keydown', h)
+    }, [question, revealed])
 
     const handleKeyDown = (e) => { if (e.key === 'Enter') { e.preventDefault(); if (!revealed) handleSubmit() } }
     const getPlaceholder = () => {
@@ -55558,7 +55615,63 @@ function makeQuizApp({ title, subtitle, apiPath, diffLabels, placeholders, tip, 
             <div className="question-prompt" style={{ fontSize: '1.3rem', margin: '20px 0', lineHeight: '1.6', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
               <GlossaryText text={question.prompt} />
             </div>
-            <input className="answer-input" type="text" value={answer} onChange={e => { if (!revealed) setAnswer(e.target.value) }} disabled={revealed} placeholder={getPlaceholder()} onKeyDown={handleKeyDown} autoFocus />
+            <ConceptualVisualDiagram visualType={question.visualType} visualData={question.visualData} />
+            {question.options ? (
+              <div className="mcq-options-container" style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '480px', margin: '20px auto', padding: '0 10px' }}>
+                {question.options.map((opt, idx) => {
+                  const letter = ['A', 'B', 'C', 'D'][idx]
+                  const isSelected = answer === letter
+                  const isCorrectChoice = revealed && (letter === (revealedCorrectAnswer || question.answerOption))
+                  const isWrongChoice = revealed && isSelected && !isCorrect
+                  
+                  let cardClass = "mcq-option-card"
+                  if (isSelected) cardClass += " selected"
+                  if (isCorrectChoice) cardClass += " correct"
+                  if (isWrongChoice) cardClass += " wrong"
+                  
+                  return (
+                    <div
+                      key={letter}
+                      className={cardClass}
+                      onClick={() => { if (!revealed) setAnswer(letter) }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        border: isSelected ? '2px solid var(--clr-accent)' : '1px solid var(--clr-border)',
+                        borderRadius: '8px',
+                        cursor: revealed ? 'not-allowed' : 'pointer',
+                        background: isCorrectChoice ? 'rgba(76, 175, 80, 0.15)' : isWrongChoice ? 'rgba(244, 67, 54, 0.15)' : isSelected ? 'var(--clr-bg-soft)' : 'var(--clr-bg-card)',
+                        borderColor: isCorrectChoice ? 'var(--clr-correct)' : isWrongChoice ? 'var(--clr-wrong)' : isSelected ? 'var(--clr-accent)' : 'var(--clr-border)',
+                        transition: 'all 0.2s ease',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <div style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        border: '2px solid',
+                        borderColor: isCorrectChoice ? 'var(--clr-correct)' : isWrongChoice ? 'var(--clr-wrong)' : isSelected ? 'var(--clr-accent)' : 'var(--clr-text-soft)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: '12px',
+                        fontSize: '0.85rem',
+                        fontWeight: 'bold',
+                        color: isCorrectChoice ? 'var(--clr-correct)' : isWrongChoice ? 'var(--clr-wrong)' : isSelected ? 'var(--clr-accent)' : 'var(--clr-text-soft)',
+                        background: isSelected ? 'rgba(var(--clr-accent-rgb), 0.1)' : 'transparent'
+                      }}>
+                        {letter}
+                      </div>
+                      <span style={{ fontSize: '1rem', color: 'var(--clr-text)' }}>{opt}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <input className="answer-input" type="text" value={answer} onChange={e => { if (!revealed) setAnswer(e.target.value) }} disabled={revealed} placeholder={getPlaceholder()} onKeyDown={handleKeyDown} autoFocus />
+            )}
           </div>}
           {!question && loading && <div style={{ textAlign: 'center', padding: '24px', color: 'var(--clr-text-soft)' }}>Loading question…</div>}
           {!question && !loading && loadError && (
@@ -56089,7 +56202,7 @@ const BasesApp = makeQuizApp({
 })
 
 const CircleThApp = makeQuizApp({
-  title: 'Circle Theorems', subtitle: 'Angles, tangents, cyclic quads', apiPath: 'circle-api', topicKey: 'circle-theorems',
+  title: 'Circle Theorems', subtitle: 'Angles, tangents, cyclic quads', apiPath: 'circleth-api', topicKey: 'circle-theorems',
   diffLabels: { easy: 'Easy — Semicircle', medium: 'Medium — Centre/Circum', hard: 'Hard — Cyclic quad', extrahard: 'Extra Hard — Tangent' },
   placeholders: 'e.g. 45',
 })
@@ -58258,7 +58371,7 @@ const RANDOM_MIX_TOPICS = [
   { key: 'log', name: 'Logarithms', api: 'log-api' },
   { key: 'diff', name: 'Differentiation', api: 'diff-api' },
   { key: 'bases', name: 'Number Bases', api: 'bases-api' },
-  { key: 'circleth', name: 'Circle Theorems', api: 'circle-api' },
+  { key: 'circleth', name: 'Circle Theorems', api: 'circleth-api' },
   { key: 'integ', name: 'Integration', api: 'integ-api' },
   { key: 'stdform', name: 'Standard Form', api: 'stdform-api' },
   { key: 'bounds', name: 'Bounds', api: 'bounds-api' },
@@ -61185,6 +61298,7 @@ function FractionAddApp({ onBack, completedTopics = [], goldMastery = [], markTo
   const [loading, setLoading] = useState(false)
   // Whether answer has been revealed (submitted)
   const [revealed, setRevealed] = useState(false)
+  const [revealedCorrectAnswer, setRevealedCorrectAnswer] = useState('')
   // Results log for ResultsTable
   const [results, setResults] = useState([])
   const [sessionGoal, setSessionGoal] = useState(isGoalMode ? 'speed' : 'standard')
@@ -61200,7 +61314,9 @@ function FractionAddApp({ onBack, completedTopics = [], goldMastery = [], markTo
   // ── Refs for auto-advance ────────────────────────────────────────────
   const advanceFnRef = useRef(null)
 
-  const effectiveDiff = () => (isAdaptive) ? adaptiveLevel(adaptScoreRef.current) : difficulty
+  const promotionTriggeredRef = useRef(false)
+
+  const effectiveDiff = () => isAdaptive ? adaptiveLevel(adaptScoreRef.current) : difficulty
 
   /**
    * loadQuestion(): Fetch a new fraction-add question from the API.
@@ -61229,13 +61345,45 @@ function FractionAddApp({ onBack, completedTopics = [], goldMastery = [], markTo
 const loadQuestion = async () => {
     setLoading(true)
     try {
-      const r = await fetch(`${API}/fractionadd-api/question?difficulty=${effectiveDiff()}&goal=${sessionGoal}`, { headers: { 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' } })
-      const data = await r.json()
+      const diff = effectiveDiff()
+      const isMilestone = (questionNumber > 0 && questionNumber % 5 === 0) || promotionTriggeredRef.current
+      promotionTriggeredRef.current = false
+
+      const headers = { 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }
+
+      let data = null
+      if (isMilestone) {
+        try {
+          const excludeList = results.map(r => r.id || '').filter(Boolean).join(',')
+          const cr = await fetch(`${API}/conceptual-api/question?topic=fractionadd&difficulty=${diff}&exclude=${excludeList}&goal=${sessionGoal}`, { headers })
+          if (cr.ok) {
+            data = await cr.json()
+          } else {
+            console.warn('Conceptual question not found or failed for topic: fractionadd. Falling back to standard question.')
+          }
+        } catch (err) {
+          console.error('Failed to fetch conceptual question, falling back:', err)
+        }
+      }
+
+      if (!data) {
+        const r = await fetch(`${API}/fractionadd-api/question?difficulty=${diff}&goal=${sessionGoal}`, {
+          headers: { 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' }
+        })
+        if (!r.ok) throw new Error(`Server returned ${r.status}`)
+        data = await r.json()
+      }
+
+      // Map conceptual question schema to prompt if conceptual
+      if (data && data.isConceptual && data.question) {
+        data.prompt = data.question
+      }
       setQuestion(data)
       setAnswer('')
       setFeedback('')
       setIsCorrect(null)
       setRevealed(false)
+      setRevealedCorrectAnswer('')
       timer.start(sessionGoal, handleTimeout, getSpeedRunLimit(difficulty ?? 'easy', isAdaptive ?? false))
     } catch (e) {
       console.error('Failed to load fraction question:', e)
@@ -61255,6 +61403,7 @@ const loadQuestion = async () => {
     setResults([])
     setAdaptScore(0)
     adaptScoreRef.current = 0
+    promotionTriggeredRef.current = false
     setStarted(true)
     setFinished(false)
   }
@@ -61292,6 +61441,20 @@ const loadQuestion = async () => {
     return () => window.removeEventListener('keydown', handleKey)
   }, [revealed, isCorrect, questionNumber])
 
+  // Keyboard listener for option selection (A, B, C, D) in conceptual mode
+  useEffect(() => {
+    if (!started || finished || !question || !question.isConceptual || revealed) return
+    const handleKey = (e) => {
+      const key = e.key.toUpperCase()
+      if (['A', 'B', 'C', 'D'].includes(key)) {
+        e.preventDefault()
+        setAnswer(key)
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [started, finished, question, revealed])
+
   /**
    * parseAnswer(str): Parse user's answer string into {whole, num, den}
    * Accepts formats: "3/4", "2 3/4", "5", "2 5"
@@ -61318,6 +61481,50 @@ const loadQuestion = async () => {
    */
   const handleSubmit = async () => {
     if (!question || revealed) return
+
+    if (question.isConceptual) {
+      if (!answer) return
+      const timeTaken = timer.stop()
+      try {
+        const r = await fetch(`${API}/conceptual-api/check`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: question.id, answerOption: answer.trim() })
+        })
+        const data = await r.json()
+        setIsCorrect(data.correct)
+        setRevealed(true)
+        if (data.correctAnswer) setRevealedCorrectAnswer(data.correctAnswer)
+        if (data.correct) setScore(s => s + 1)
+
+        setFeedback(data.correct ? 'Correct!' : `Incorrect. Correct answer is option ${data.correctAnswer}. ${data.explanation || ''}`)
+        setResults(prev => [...prev, {
+          question: question.prompt,
+          userAnswer: answer.trim(),
+          correctAnswer: data.correctAnswer,
+          correct: data.correct,
+          time: timeTaken,
+          id: question.id
+        }])
+
+        if (isAdaptive) {
+          const oldStage = Math.min(3, Math.max(0, Math.floor(adaptScoreRef.current)))
+          setAdaptScore(prev => {
+            const next = data.correct ? Math.min(3, prev + 0.25) : Math.max(0, prev - 0.35)
+            adaptScoreRef.current = next
+            const newStage = Math.min(3, Math.max(0, Math.floor(next)))
+            if (newStage > oldStage) {
+              promotionTriggeredRef.current = true
+            }
+            return next
+          })
+        }
+      } catch (e) {
+        console.error('Failed to check conceptual fraction answer:', e)
+      }
+      return
+    }
+
     const parsed = parseAnswer(answer)
     if (!parsed || parsed.den === 0) return
 
@@ -61364,13 +61571,23 @@ const loadQuestion = async () => {
 
       setResults(prev => [...prev, {
         prompt,
+        question: prompt,
         userAnswer: answer.trim(),
         correctAnswer: data.display,
         correct: data.correct,
         time: timeTaken
       }])
       if (isAdaptive) {
-        setAdaptScore(prev => { const next = data.correct ? Math.min(3, prev + 0.25) : Math.max(0, prev - 0.35); adaptScoreRef.current = next; return next })
+        const oldStage = Math.min(3, Math.max(0, Math.floor(adaptScoreRef.current)))
+        setAdaptScore(prev => {
+          const next = data.correct ? Math.min(3, prev + 0.25) : Math.max(0, prev - 0.35)
+          adaptScoreRef.current = next
+          const newStage = Math.min(3, Math.max(0, Math.floor(next)))
+          if (newStage > oldStage) {
+            promotionTriggeredRef.current = true
+          }
+          return next
+        })
       }
     } catch (e) {
       console.error('Failed to check fraction answer:', e)
@@ -61380,6 +61597,40 @@ const loadQuestion = async () => {
   const handleSolve = async () => {
     if (!question || revealed) return
     timer.stop()
+
+    if (question.isConceptual) {
+      try {
+        const r = await fetch(`${API}/conceptual-api/check`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: question.id, answerOption: '' })
+        })
+        const data = await r.json()
+        setIsCorrect(false)
+        setRevealed(true)
+        if (data.correctAnswer) setRevealedCorrectAnswer(data.correctAnswer)
+        setFeedback(`Solution: Correct option is ${data.correctAnswer}. ${data.explanation || ''}`)
+        setResults(prev => [...prev, {
+          question: question.prompt,
+          userAnswer: '(solved)',
+          correctAnswer: data.correctAnswer,
+          correct: false,
+          time: 0,
+          id: question.id
+        }])
+        if (isAdaptive) {
+          setAdaptScore(prev => {
+            const next = Math.max(0, prev - 0.35)
+            adaptScoreRef.current = next
+            return next
+          })
+        }
+      } catch (e) {
+        console.error('Failed to solve conceptual question:', e)
+      }
+      return
+    }
+
     const op = question.op || '+'
     const prompt = question.mixed
       ? `${question.w1} ${question.n1}/${question.d1} ${op} ${question.w2} ${question.n2}/${question.d2}`
@@ -61391,9 +61642,13 @@ const loadQuestion = async () => {
       const display = data.display || data.correctAnswer || data.answer || ''
       const explanation = data.explanation || ''
       setFeedback(`Solution: ${display}${explanation ? '\n' + explanation : ''}`)
-      setResults(prev => [...prev, { prompt, userAnswer: '(solved)', correctAnswer: display, correct: false, time: 0 }])
+      setResults(prev => [...prev, { prompt, question: prompt, userAnswer: '(solved)', correctAnswer: display, correct: false, time: 0 }])
       if (isAdaptive) {
-        setAdaptScore(prev => Math.max(0, prev - 0.35))
+        setAdaptScore(prev => {
+          const next = Math.max(0, prev - 0.35)
+          adaptScoreRef.current = next
+          return next
+        })
       }
     } catch (e) { console.error('Failed to solve fraction:', e) }
   }
@@ -61532,37 +61787,98 @@ const loadQuestion = async () => {
         </div>
         {isAdaptive && <DifficultySlider pct={adaptivePct(adaptScore)} onChange={(p) => { const v = (p / 100) * 3; setAdaptScore(v); adaptScoreRef.current = v }} />}
         {question && (
-          <div className="fraction-problem">
-            {/* Render the problem: n1/d1 (op) n2/d2 or mixed numbers (op) mixed numbers.
-                The operator comes from the server (default '+' for back-compat). */}
-            {question.mixed ? (
-              <div className="fraction-expression">
-                {formatMixed(question.w1, question.n1, question.d1)}
-                <span className="frac-operator">{question.op || '+'}</span>
-                {formatMixed(question.w2, question.n2, question.d2)}
-                <span className="frac-operator">=</span>
-              </div>
-            ) : (
-              <div className="fraction-expression">
-                {formatFraction(question.n1, question.d1)}
-                <span className="frac-operator">{question.op || '+'}</span>
-                {formatFraction(question.n2, question.d2)}
-                <span className="frac-operator">=</span>
-              </div>
-            )}
+          question.isConceptual ? (
+            <div style={{ textAlign: 'center', width: '100%' }}>
+              <div className="question-prompt" style={{ fontSize: '1.3rem', margin: '20px 0', lineHeight: '1.6' }}>{question.prompt}</div>
+              <ConceptualVisualDiagram visualType={question.visualType} visualData={question.visualData} />
+              {question.options && (
+                <div className="mcq-options-container" style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '480px', margin: '20px auto', padding: '0 10px' }}>
+                  {question.options.map((opt, idx) => {
+                    const letter = ['A', 'B', 'C', 'D'][idx]
+                    const isSelected = answer === letter
+                    const isCorrectChoice = revealed && (letter === (revealedCorrectAnswer || question.answerOption))
+                    const isWrongChoice = revealed && isSelected && !isCorrect
 
-            {/* Single text input — type answer as "3/4" or "2 3/4" */}
-            <input
-              className="answer-input"
-              type="text"
-              value={answer}
-              onChange={e => { if (!revealed) setAnswer(e.target.value) }}
-              disabled={revealed}
-              placeholder={question.mixed ? 'e.g. 2 3/4' : 'e.g. 3/4'}
-              onKeyDown={handleKeyDown}
-              autoFocus
-            />
-          </div>
+                    let cardClass = "mcq-option-card"
+                    if (isSelected) cardClass += " selected"
+                    if (isCorrectChoice) cardClass += " correct"
+                    if (isWrongChoice) cardClass += " wrong"
+
+                    return (
+                      <div
+                        key={letter}
+                        className={cardClass}
+                        onClick={() => { if (!revealed) setAnswer(letter) }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '12px 16px',
+                          border: isSelected ? '2px solid var(--clr-accent)' : '1px solid var(--clr-border)',
+                          borderRadius: '8px',
+                          cursor: revealed ? 'not-allowed' : 'pointer',
+                          background: isCorrectChoice ? 'rgba(76, 175, 80, 0.15)' : isWrongChoice ? 'rgba(244, 67, 54, 0.15)' : isSelected ? 'var(--clr-bg-soft)' : 'var(--clr-bg-card)',
+                          borderColor: isCorrectChoice ? 'var(--clr-correct)' : isWrongChoice ? 'var(--clr-wrong)' : isSelected ? 'var(--clr-accent)' : 'var(--clr-border)',
+                          transition: 'all 0.2s ease',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <span className="option-badge" style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '50%',
+                          marginRight: '12px',
+                          fontWeight: 'bold',
+                          fontSize: '0.9rem',
+                          background: isCorrectChoice ? 'var(--clr-correct)' : isWrongChoice ? 'var(--clr-wrong)' : isSelected ? 'var(--clr-accent)' : 'var(--clr-bg-soft)',
+                          color: (isCorrectChoice || isWrongChoice || isSelected) ? '#fff' : 'var(--clr-fg)',
+                        }}>
+                          {letter}
+                        </span>
+                        <span className="option-text" style={{ flex: 1, fontSize: '0.95rem', fontWeight: isSelected ? '600' : 'normal', color: 'var(--clr-fg)' }}>
+                          {opt}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="fraction-problem">
+              {/* Render the problem: n1/d1 (op) n2/d2 or mixed numbers (op) mixed numbers.
+                  The operator comes from the server (default '+' for back-compat). */}
+              {question.mixed ? (
+                <div className="fraction-expression">
+                  {formatMixed(question.w1, question.n1, question.d1)}
+                  <span className="frac-operator">{question.op || '+'}</span>
+                  {formatMixed(question.w2, question.n2, question.d2)}
+                  <span className="frac-operator">=</span>
+                </div>
+              ) : (
+                <div className="fraction-expression">
+                  {formatFraction(question.n1, question.d1)}
+                  <span className="frac-operator">{question.op || '+'}</span>
+                  {formatFraction(question.n2, question.d2)}
+                  <span className="frac-operator">=</span>
+                </div>
+              )}
+
+              {/* Single text input — type answer as "3/4" or "2 3/4" */}
+              <input
+                className="answer-input"
+                type="text"
+                value={answer}
+                onChange={e => { if (!revealed) setAnswer(e.target.value) }}
+                disabled={revealed}
+                placeholder={question.mixed ? 'e.g. 2 3/4' : 'e.g. 3/4'}
+                onKeyDown={handleKeyDown}
+                autoFocus
+              />
+            </div>
+          )
         )}
 
         {renderFeedback(feedback, isCorrect)}
@@ -61713,9 +62029,12 @@ function TwinHuntApp({ onBack, isGoalMode = false }) {
   const handleTimeout = async () => {
     if (typeof revealed !== 'undefined' && revealed) return
     if (typeof finished !== 'undefined' && finished) return
+    if (typeof phase !== 'undefined' && phase === 'finished') return
     try { if (typeof setIsCorrect !== 'undefined') setIsCorrect(false) } catch(_) {}
     try { if (typeof setRevealed !== 'undefined') setRevealed(true) } catch(_) {}
-    try { if (typeof setFeedback !== 'undefined') setFeedback('⏰ Time\'s up! Speed run requires a quick answer.') } catch(_) {}
+    try { if (typeof setFeedback !== 'undefined') setFeedback("⏰ Time's up!") } catch(_) {}
+    const timeTaken = timer.stop ? timer.stop() : 0
+    const qPrompt = question ? (question.prompt || question.question || (question.n1 !== undefined ? `${question.n1} ${question.op || '+'} ${question.n2}` : 'Question')) : 'Question'
     try {
       const r = await fetch(`${API}/twinhunt-api/check`, {
         method: 'POST',
@@ -61723,10 +62042,19 @@ function TwinHuntApp({ onBack, isGoalMode = false }) {
         body: JSON.stringify({ ...(typeof question !== 'undefined' ? question : {}), userAnswer: '', answer: '', sessionGoal })
       })
       const d = await r.json()
-      if (sessionGoal === 'perfect') {
-        try { setFinished(true); timer.reset() } catch(_) {}
+      const corrAns = d.display || d.correctAnswer || d.answer || '—'
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: corrAns, correct: false, time: timeTaken }])
       }
-    } catch(e) { console.error('handleTimeout error:', e) }
+      if (sessionGoal === 'perfect') {
+        try { if (typeof setFinished === 'function') setFinished(true); if (typeof setPhase === 'function') setPhase('finished'); timer.reset() } catch(_) {}
+      }
+    } catch(e) {
+      console.error('handleTimeout error:', e)
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: '—', correct: false, time: timeTaken }])
+      }
+    }
   }
 
 const generateRound = (n) => {
@@ -62024,9 +62352,12 @@ function SqrtApp({ onBack, isGoalMode = false }) {
   const handleTimeout = async () => {
     if (typeof revealed !== 'undefined' && revealed) return
     if (typeof finished !== 'undefined' && finished) return
+    if (typeof phase !== 'undefined' && phase === 'finished') return
     try { if (typeof setIsCorrect !== 'undefined') setIsCorrect(false) } catch(_) {}
     try { if (typeof setRevealed !== 'undefined') setRevealed(true) } catch(_) {}
-    try { if (typeof setFeedback !== 'undefined') setFeedback('⏰ Time\'s up! Speed run requires a quick answer.') } catch(_) {}
+    try { if (typeof setFeedback !== 'undefined') setFeedback("⏰ Time's up!") } catch(_) {}
+    const timeTaken = timer.stop ? timer.stop() : 0
+    const qPrompt = question ? (question.prompt || question.question || (question.n1 !== undefined ? `${question.n1} ${question.op || '+'} ${question.n2}` : 'Question')) : 'Question'
     try {
       const r = await fetch(`${API}/sqrt-api/check`, {
         method: 'POST',
@@ -62034,10 +62365,19 @@ function SqrtApp({ onBack, isGoalMode = false }) {
         body: JSON.stringify({ ...(typeof question !== 'undefined' ? question : {}), userAnswer: '', answer: '', sessionGoal })
       })
       const d = await r.json()
-      if (sessionGoal === 'perfect') {
-        try { setFinished(true); timer.reset() } catch(_) {}
+      const corrAns = d.display || d.correctAnswer || d.answer || '—'
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: corrAns, correct: false, time: timeTaken }])
       }
-    } catch(e) { console.error('handleTimeout error:', e) }
+      if (sessionGoal === 'perfect') {
+        try { if (typeof setFinished === 'function') setFinished(true); if (typeof setPhase === 'function') setPhase('finished'); timer.reset() } catch(_) {}
+      }
+    } catch(e) {
+      console.error('handleTimeout error:', e)
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: '—', correct: false, time: timeTaken }])
+      }
+    }
   }
 
 const fetchQuestion = async (step) => {
@@ -62346,9 +62686,12 @@ function PolyMulApp({ onBack, isGoalMode = false }) {
   const handleTimeout = async () => {
     if (typeof revealed !== 'undefined' && revealed) return
     if (typeof finished !== 'undefined' && finished) return
+    if (typeof phase !== 'undefined' && phase === 'finished') return
     try { if (typeof setIsCorrect !== 'undefined') setIsCorrect(false) } catch(_) {}
     try { if (typeof setRevealed !== 'undefined') setRevealed(true) } catch(_) {}
-    try { if (typeof setFeedback !== 'undefined') setFeedback('⏰ Time\'s up! Speed run requires a quick answer.') } catch(_) {}
+    try { if (typeof setFeedback !== 'undefined') setFeedback("⏰ Time's up!") } catch(_) {}
+    const timeTaken = timer.stop ? timer.stop() : 0
+    const qPrompt = question ? (question.prompt || question.question || (question.n1 !== undefined ? `${question.n1} ${question.op || '+'} ${question.n2}` : 'Question')) : 'Question'
     try {
       const r = await fetch(`${API}/polymul-api/check`, {
         method: 'POST',
@@ -62356,10 +62699,19 @@ function PolyMulApp({ onBack, isGoalMode = false }) {
         body: JSON.stringify({ ...(typeof question !== 'undefined' ? question : {}), userAnswer: '', answer: '', sessionGoal })
       })
       const d = await r.json()
-      if (sessionGoal === 'perfect') {
-        try { setFinished(true); timer.reset() } catch(_) {}
+      const corrAns = d.display || d.correctAnswer || d.answer || '—'
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: corrAns, correct: false, time: timeTaken }])
       }
-    } catch(e) { console.error('handleTimeout error:', e) }
+      if (sessionGoal === 'perfect') {
+        try { if (typeof setFinished === 'function') setFinished(true); if (typeof setPhase === 'function') setPhase('finished'); timer.reset() } catch(_) {}
+      }
+    } catch(e) {
+      console.error('handleTimeout error:', e)
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: '—', correct: false, time: timeTaken }])
+      }
+    }
   }
 
 const loadQuestion = async () => {
@@ -62667,9 +63019,12 @@ function PolyFactorApp({ onBack, isGoalMode = false }) {
   const handleTimeout = async () => {
     if (typeof revealed !== 'undefined' && revealed) return
     if (typeof finished !== 'undefined' && finished) return
+    if (typeof phase !== 'undefined' && phase === 'finished') return
     try { if (typeof setIsCorrect !== 'undefined') setIsCorrect(false) } catch(_) {}
     try { if (typeof setRevealed !== 'undefined') setRevealed(true) } catch(_) {}
-    try { if (typeof setFeedback !== 'undefined') setFeedback('⏰ Time\'s up! Speed run requires a quick answer.') } catch(_) {}
+    try { if (typeof setFeedback !== 'undefined') setFeedback("⏰ Time's up!") } catch(_) {}
+    const timeTaken = timer.stop ? timer.stop() : 0
+    const qPrompt = question ? (question.prompt || question.question || (question.n1 !== undefined ? `${question.n1} ${question.op || '+'} ${question.n2}` : 'Question')) : 'Question'
     try {
       const r = await fetch(`${API}/polyfactor-api/check`, {
         method: 'POST',
@@ -62677,10 +63032,19 @@ function PolyFactorApp({ onBack, isGoalMode = false }) {
         body: JSON.stringify({ ...(typeof question !== 'undefined' ? question : {}), userAnswer: '', answer: '', sessionGoal })
       })
       const d = await r.json()
-      if (sessionGoal === 'perfect') {
-        try { setFinished(true); timer.reset() } catch(_) {}
+      const corrAns = d.display || d.correctAnswer || d.answer || '—'
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: corrAns, correct: false, time: timeTaken }])
       }
-    } catch(e) { console.error('handleTimeout error:', e) }
+      if (sessionGoal === 'perfect') {
+        try { if (typeof setFinished === 'function') setFinished(true); if (typeof setPhase === 'function') setPhase('finished'); timer.reset() } catch(_) {}
+      }
+    } catch(e) {
+      console.error('handleTimeout error:', e)
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: '—', correct: false, time: timeTaken }])
+      }
+    }
   }
 
 const loadQuestion = async () => {
@@ -62970,9 +63334,12 @@ function PrimeFactorApp({ onBack, isGoalMode = false }) {
   const handleTimeout = async () => {
     if (typeof revealed !== 'undefined' && revealed) return
     if (typeof finished !== 'undefined' && finished) return
+    if (typeof phase !== 'undefined' && phase === 'finished') return
     try { if (typeof setIsCorrect !== 'undefined') setIsCorrect(false) } catch(_) {}
     try { if (typeof setRevealed !== 'undefined') setRevealed(true) } catch(_) {}
-    try { if (typeof setFeedback !== 'undefined') setFeedback('⏰ Time\'s up! Speed run requires a quick answer.') } catch(_) {}
+    try { if (typeof setFeedback !== 'undefined') setFeedback("⏰ Time's up!") } catch(_) {}
+    const timeTaken = timer.stop ? timer.stop() : 0
+    const qPrompt = question ? (question.prompt || question.question || (question.n1 !== undefined ? `${question.n1} ${question.op || '+'} ${question.n2}` : 'Question')) : 'Question'
     try {
       const r = await fetch(`${API}/primefactor-api/check`, {
         method: 'POST',
@@ -62980,10 +63347,19 @@ function PrimeFactorApp({ onBack, isGoalMode = false }) {
         body: JSON.stringify({ ...(typeof question !== 'undefined' ? question : {}), userAnswer: '', answer: '', sessionGoal })
       })
       const d = await r.json()
-      if (sessionGoal === 'perfect') {
-        try { setFinished(true); timer.reset() } catch(_) {}
+      const corrAns = d.display || d.correctAnswer || d.answer || '—'
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: corrAns, correct: false, time: timeTaken }])
       }
-    } catch(e) { console.error('handleTimeout error:', e) }
+      if (sessionGoal === 'perfect') {
+        try { if (typeof setFinished === 'function') setFinished(true); if (typeof setPhase === 'function') setPhase('finished'); timer.reset() } catch(_) {}
+      }
+    } catch(e) {
+      console.error('handleTimeout error:', e)
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: '—', correct: false, time: timeTaken }])
+      }
+    }
   }
 
 const loadQuestion = async () => {
@@ -63317,9 +63693,12 @@ function QFormulaApp({ onBack, isGoalMode = false }) {
   const handleTimeout = async () => {
     if (typeof revealed !== 'undefined' && revealed) return
     if (typeof finished !== 'undefined' && finished) return
+    if (typeof phase !== 'undefined' && phase === 'finished') return
     try { if (typeof setIsCorrect !== 'undefined') setIsCorrect(false) } catch(_) {}
     try { if (typeof setRevealed !== 'undefined') setRevealed(true) } catch(_) {}
-    try { if (typeof setFeedback !== 'undefined') setFeedback('⏰ Time\'s up! Speed run requires a quick answer.') } catch(_) {}
+    try { if (typeof setFeedback !== 'undefined') setFeedback("⏰ Time's up!") } catch(_) {}
+    const timeTaken = timer.stop ? timer.stop() : 0
+    const qPrompt = question ? (question.prompt || question.question || (question.n1 !== undefined ? `${question.n1} ${question.op || '+'} ${question.n2}` : 'Question')) : 'Question'
     try {
       const r = await fetch(`${API}/qformula-api/check`, {
         method: 'POST',
@@ -63327,10 +63706,19 @@ function QFormulaApp({ onBack, isGoalMode = false }) {
         body: JSON.stringify({ ...(typeof question !== 'undefined' ? question : {}), userAnswer: '', answer: '', sessionGoal })
       })
       const d = await r.json()
-      if (sessionGoal === 'perfect') {
-        try { setFinished(true); timer.reset() } catch(_) {}
+      const corrAns = d.display || d.correctAnswer || d.answer || '—'
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: corrAns, correct: false, time: timeTaken }])
       }
-    } catch(e) { console.error('handleTimeout error:', e) }
+      if (sessionGoal === 'perfect') {
+        try { if (typeof setFinished === 'function') setFinished(true); if (typeof setPhase === 'function') setPhase('finished'); timer.reset() } catch(_) {}
+      }
+    } catch(e) {
+      console.error('handleTimeout error:', e)
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: '—', correct: false, time: timeTaken }])
+      }
+    }
   }
 
 const loadQuestion = async () => {
@@ -63641,9 +64029,12 @@ function SimulApp({ onBack, isGoalMode = false }) {
   const handleTimeout = async () => {
     if (typeof revealed !== 'undefined' && revealed) return
     if (typeof finished !== 'undefined' && finished) return
+    if (typeof phase !== 'undefined' && phase === 'finished') return
     try { if (typeof setIsCorrect !== 'undefined') setIsCorrect(false) } catch(_) {}
     try { if (typeof setRevealed !== 'undefined') setRevealed(true) } catch(_) {}
-    try { if (typeof setFeedback !== 'undefined') setFeedback('⏰ Time\'s up! Speed run requires a quick answer.') } catch(_) {}
+    try { if (typeof setFeedback !== 'undefined') setFeedback("⏰ Time's up!") } catch(_) {}
+    const timeTaken = timer.stop ? timer.stop() : 0
+    const qPrompt = question ? (question.prompt || question.question || (question.n1 !== undefined ? `${question.n1} ${question.op || '+'} ${question.n2}` : 'Question')) : 'Question'
     try {
       const r = await fetch(`${API}/simul-api/check`, {
         method: 'POST',
@@ -63651,10 +64042,19 @@ function SimulApp({ onBack, isGoalMode = false }) {
         body: JSON.stringify({ ...(typeof question !== 'undefined' ? question : {}), userAnswer: '', answer: '', sessionGoal })
       })
       const d = await r.json()
-      if (sessionGoal === 'perfect') {
-        try { setFinished(true); timer.reset() } catch(_) {}
+      const corrAns = d.display || d.correctAnswer || d.answer || '—'
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: corrAns, correct: false, time: timeTaken }])
       }
-    } catch(e) { console.error('handleTimeout error:', e) }
+      if (sessionGoal === 'perfect') {
+        try { if (typeof setFinished === 'function') setFinished(true); if (typeof setPhase === 'function') setPhase('finished'); timer.reset() } catch(_) {}
+      }
+    } catch(e) {
+      console.error('handleTimeout error:', e)
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: '—', correct: false, time: timeTaken }])
+      }
+    }
   }
 
 const loadQuestion = async () => {
@@ -63964,9 +64364,12 @@ function FuncEvalApp({ onBack, isGoalMode = false }) {
   const handleTimeout = async () => {
     if (typeof revealed !== 'undefined' && revealed) return
     if (typeof finished !== 'undefined' && finished) return
+    if (typeof phase !== 'undefined' && phase === 'finished') return
     try { if (typeof setIsCorrect !== 'undefined') setIsCorrect(false) } catch(_) {}
     try { if (typeof setRevealed !== 'undefined') setRevealed(true) } catch(_) {}
-    try { if (typeof setFeedback !== 'undefined') setFeedback('⏰ Time\'s up! Speed run requires a quick answer.') } catch(_) {}
+    try { if (typeof setFeedback !== 'undefined') setFeedback("⏰ Time's up!") } catch(_) {}
+    const timeTaken = timer.stop ? timer.stop() : 0
+    const qPrompt = question ? (question.prompt || question.question || (question.n1 !== undefined ? `${question.n1} ${question.op || '+'} ${question.n2}` : 'Question')) : 'Question'
     try {
       const r = await fetch(`${API}/funceval-api/check`, {
         method: 'POST',
@@ -63974,10 +64377,19 @@ function FuncEvalApp({ onBack, isGoalMode = false }) {
         body: JSON.stringify({ ...(typeof question !== 'undefined' ? question : {}), userAnswer: '', answer: '', sessionGoal })
       })
       const d = await r.json()
-      if (sessionGoal === 'perfect') {
-        try { setFinished(true); timer.reset() } catch(_) {}
+      const corrAns = d.display || d.correctAnswer || d.answer || '—'
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: corrAns, correct: false, time: timeTaken }])
       }
-    } catch(e) { console.error('handleTimeout error:', e) }
+      if (sessionGoal === 'perfect') {
+        try { if (typeof setFinished === 'function') setFinished(true); if (typeof setPhase === 'function') setPhase('finished'); timer.reset() } catch(_) {}
+      }
+    } catch(e) {
+      console.error('handleTimeout error:', e)
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: '—', correct: false, time: timeTaken }])
+      }
+    }
   }
 
 const loadQuestion = async () => {
@@ -64254,9 +64666,12 @@ function LineEqApp({ onBack, isGoalMode = false }) {
   const handleTimeout = async () => {
     if (typeof revealed !== 'undefined' && revealed) return
     if (typeof finished !== 'undefined' && finished) return
+    if (typeof phase !== 'undefined' && phase === 'finished') return
     try { if (typeof setIsCorrect !== 'undefined') setIsCorrect(false) } catch(_) {}
     try { if (typeof setRevealed !== 'undefined') setRevealed(true) } catch(_) {}
-    try { if (typeof setFeedback !== 'undefined') setFeedback('⏰ Time\'s up! Speed run requires a quick answer.') } catch(_) {}
+    try { if (typeof setFeedback !== 'undefined') setFeedback("⏰ Time's up!") } catch(_) {}
+    const timeTaken = timer.stop ? timer.stop() : 0
+    const qPrompt = question ? (question.prompt || question.question || (question.n1 !== undefined ? `${question.n1} ${question.op || '+'} ${question.n2}` : 'Question')) : 'Question'
     try {
       const r = await fetch(`${API}/lineq-api/check`, {
         method: 'POST',
@@ -64264,10 +64679,19 @@ function LineEqApp({ onBack, isGoalMode = false }) {
         body: JSON.stringify({ ...(typeof question !== 'undefined' ? question : {}), userAnswer: '', answer: '', sessionGoal })
       })
       const d = await r.json()
-      if (sessionGoal === 'perfect') {
-        try { setFinished(true); timer.reset() } catch(_) {}
+      const corrAns = d.display || d.correctAnswer || d.answer || '—'
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: corrAns, correct: false, time: timeTaken }])
       }
-    } catch(e) { console.error('handleTimeout error:', e) }
+      if (sessionGoal === 'perfect') {
+        try { if (typeof setFinished === 'function') setFinished(true); if (typeof setPhase === 'function') setPhase('finished'); timer.reset() } catch(_) {}
+      }
+    } catch(e) {
+      console.error('handleTimeout error:', e)
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: '—', correct: false, time: timeTaken }])
+      }
+    }
   }
 
 const loadQuestion = async () => {
@@ -64613,7 +65037,7 @@ function fetchQuestionForType(type, difficulty, qIndex = 0, sessionGoal = 'stand
     log: `${API}/log-api/question?difficulty=${difficulty}`,
     diff: `${API}/diff-api/question?difficulty=${difficulty}`,
     bases: `${API}/bases-api/question?difficulty=${difficulty}`,
-    circleth: `${API}/circle-api/question?difficulty=${difficulty}`,
+    circleth: `${API}/circleth-api/question?difficulty=${difficulty}`,
     integ: `${API}/integ-api/question?difficulty=${difficulty}`,
     stdform: `${API}/stdform-api/question?difficulty=${difficulty}`,
     bounds: `${API}/bounds-api/question?difficulty=${difficulty}`,
@@ -64655,7 +65079,6 @@ function fetchQuestionForType(type, difficulty, qIndex = 0, sessionGoal = 'stand
 }
 
 function getApiPathForType(type) {
-  if (type === 'circleth') return 'circle-api'
   return `${type}-api`
 }
 
@@ -64824,11 +65247,13 @@ function CustomApp({ onBack, isGoalMode = false }) {
    */
   
   const handleTimeout = async () => {
-    if (typeof revealed !== 'undefined' && revealed) return
+    if (revealed) return
     if (phase === 'finished') return
-    try { if (typeof setIsCorrect !== 'undefined') setIsCorrect(false) } catch(_) {}
-    try { if (typeof setRevealed !== 'undefined') setRevealed(true) } catch(_) {}
-    try { if (typeof setFeedback !== 'undefined') setFeedback('⏰ Time\'s up! Speed run requires a quick answer.') } catch(_) {}
+    try { setIsCorrect(false) } catch(_) {}
+    try { setRevealed(true) } catch(_) {}
+    try { setFeedback("⏰ Time's up!") } catch(_) {}
+    const timeTaken = timer.stop ? timer.stop() : 0
+    const qPrompt = question ? (question.prompt || question.question || (question.n1 !== undefined ? `${question.n1} ${question.op || '+'} ${question.n2}` : 'Question')) : 'Question'
     try {
       const apiPath = getApiPathForType(curType || 'basicarith')
       const r = await fetch(`${API}/${apiPath}/check`, {
@@ -64837,10 +65262,19 @@ function CustomApp({ onBack, isGoalMode = false }) {
         body: JSON.stringify({ ...(typeof question !== 'undefined' ? question : {}), userAnswer: '', answer: '', sessionGoal })
       })
       const d = await r.json()
+      const corrAns = d.display || d.correctAnswer || d.answer || '—'
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: corrAns, correct: false, time: timeTaken }])
+      }
       if (sessionGoal === 'perfect') {
         try { setPhase('finished'); timer.reset() } catch(_) {}
       }
-    } catch(e) { console.error('handleTimeout error:', e) }
+    } catch(e) {
+      console.error('handleTimeout error:', e)
+      if (typeof setResults === 'function') {
+        setResults(prev => [...prev, { prompt: qPrompt, question: qPrompt, userAnswer: '(timeout)', correctAnswer: '—', correct: false, time: timeTaken }])
+      }
+    }
   }
 
 const startQuiz = async () => {
@@ -65345,7 +65779,7 @@ const startQuiz = async () => {
       case 'remfactor': case 'heron': case 'shares': case 'banking': case 'gst':
       case 'section': case 'linprog': case 'circmeasure': case 'conics': case 'diffeq': {
         if (answer === '') return
-        const apiMap = { trig: 'trig-api', ineq: 'ineq-api', coordgeom: 'coordgeom-api', prob: 'prob-api', stats: 'stats-api', matrix: 'matrix-api', vectors: 'vectors-api', dotprod: 'dotprod-api', transform: 'transform-api', mensur: 'mensur-api', bearings: 'bearings-api', log: 'log-api', diff: 'diff-api', bases: 'bases-api', circleth: 'circle-api', integ: 'integ-api', stdform: 'stdform-api', bounds: 'bounds-api', sdt: 'sdt-api', variation: 'variation-api', hcflcm: 'hcflcm-api', profitloss: 'profitloss-api', rounding: 'rounding-api', binomial: 'binomial-api', complex: 'complex-api', angles: 'angles-api', triangles: 'triangles-api', congruence: 'congruence-api', pythag: 'pythag-api', polygons: 'polygons-api', similarity: 'similarity-api', squaring: 'squaring-api', tatsavit: 'tatsavit-api', lineareq: 'lineareq-api', decimals: 'decimals-api', permcomb: 'permcomb-api', limits: 'limits-api', invtrig: 'invtrig-api', remfactor: 'remfactor-api', heron: 'heron-api', shares: 'shares-api', banking: 'banking-api', gst: 'gst-api', section: 'section-api', linprog: 'linprog-api', circmeasure: 'circmeasure-api', conics: 'conics-api', diffeq: 'diffeq-api' }
+        const apiMap = { trig: 'trig-api', ineq: 'ineq-api', coordgeom: 'coordgeom-api', prob: 'prob-api', stats: 'stats-api', matrix: 'matrix-api', vectors: 'vectors-api', dotprod: 'dotprod-api', transform: 'transform-api', mensur: 'mensur-api', bearings: 'bearings-api', log: 'log-api', diff: 'diff-api', bases: 'bases-api', circleth: 'circleth-api', integ: 'integ-api', stdform: 'stdform-api', bounds: 'bounds-api', sdt: 'sdt-api', variation: 'variation-api', hcflcm: 'hcflcm-api', profitloss: 'profitloss-api', rounding: 'rounding-api', binomial: 'binomial-api', complex: 'complex-api', angles: 'angles-api', triangles: 'triangles-api', congruence: 'congruence-api', pythag: 'pythag-api', polygons: 'polygons-api', similarity: 'similarity-api', squaring: 'squaring-api', tatsavit: 'tatsavit-api', lineareq: 'lineareq-api', decimals: 'decimals-api', permcomb: 'permcomb-api', limits: 'limits-api', invtrig: 'invtrig-api', remfactor: 'remfactor-api', heron: 'heron-api', shares: 'shares-api', banking: 'banking-api', gst: 'gst-api', section: 'section-api', linprog: 'linprog-api', circmeasure: 'circmeasure-api', conics: 'conics-api', diffeq: 'diffeq-api' }
         const genPayload = { ...question, userAnswer: answer.trim() }
         res = await fetch(`${API}/${apiMap[curType]}/check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(genPayload) })
         data = await res.json()
@@ -68004,27 +68438,8 @@ function RiyaApp({ onBack, isGoalMode = false }) {
   }, [phase, revealed, selected, optionOrder, quizIdx, unitIdx, perQuestion, activeIndices])
 
   // ── Helpers ─────────────────────────────────────────────────────
-  
-  const handleTimeout = async () => {
-    if (typeof revealed !== 'undefined' && revealed) return
-    if (typeof finished !== 'undefined' && finished) return
-    try { if (typeof setIsCorrect !== 'undefined') setIsCorrect(false) } catch(_) {}
-    try { if (typeof setRevealed !== 'undefined') setRevealed(true) } catch(_) {}
-    try { if (typeof setFeedback !== 'undefined') setFeedback('⏰ Time\'s up! Speed run requires a quick answer.') } catch(_) {}
-    try {
-      const r = await fetch(`${API}/riya-api/check`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': authGetToken() ? `Bearer ${authGetToken()}` : '' },
-        body: JSON.stringify({ ...(typeof question !== 'undefined' ? question : {}), userAnswer: '', answer: '', sessionGoal })
-      })
-      const d = await r.json()
-      if (sessionGoal === 'perfect') {
-        try { setFinished(true); timer.reset() } catch(_) {}
-      }
-    } catch(e) { console.error('handleTimeout error:', e) }
-  }
 
-const startQuiz = () => {
+  const startQuiz = () => {
     setPhase('quiz')
     setQuizIdx(0)
     setPerQuestion([])
@@ -68338,7 +68753,7 @@ const startQuiz = () => {
  *     y = mx + C for each. If either y is out of the plot window [-7, 7],
  *     retry. This guarantees a tidy integer answer and visible points.
  */
-function TatsavitLineApp({ onBack }) {
+function TatsavitLineApp({ onBack, isGoalMode = false }) {
   // `round` is just a counter that forces regeneration on Next
   const [round, setRound] = useState(0)
   // Point coordinates are stored as strings so the inputs stay editable
