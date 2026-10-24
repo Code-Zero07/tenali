@@ -34,12 +34,10 @@ const ConceptMasterySchema = new mongoose.Schema({
   isMastered: { type: Boolean, default: false },
   incorrectStreak: { type: Number, default: 0 },
   pMastery: {
-    type: Number,
-    default: 0.3
+    type: Number
   },
   displayedMasteryPercent: {
-    type: Number,
-    default: 30
+    type: Number
   },
   completedAt: { type: Date },
   lastRevisedAt: { type: Date }

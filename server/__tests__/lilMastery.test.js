@@ -220,3 +220,42 @@ test('incorrectStreak increments/resets but never independently forces regressio
   const afterCorrect = await masteryEngine.update(userId, topicId, true);
   expect(afterCorrect.incorrectStreak).toBe(0);
 });
+
+// ─── 7. Legacy mastered record missing pMastery/displayedMasteryPercent ─────────
+
+test('legacy mastered record missing pMastery and displayedMasteryPercent stays mastered on correct answer', async () => {
+  const userId = new mongoose.Types.ObjectId();
+  const topicId = 'legacy-mastered-missing';
+
+  // Insert raw to avoid Mongoose schema defaults
+  await ConceptMastery.collection.insertOne({
+    userId,
+    topicId,
+    isMastered: true,
+    incorrectStreak: 0
+    // pMastery and displayedMasteryPercent intentionally omitted
+  });
+
+  const rawBefore = await ConceptMastery.collection.findOne({ userId, topicId });
+  expect(rawBefore.pMastery).toBeUndefined();
+  expect(rawBefore.displayedMasteryPercent).toBeUndefined();
+
+  const result = await masteryEngine.update(userId, topicId, true);
+
+  expect(result.newlyMastered).toBe(false);
+  expect(result.isMastered).toBe(true);
+  expect(typeof result.pMastery).toBe('number');
+  expect(Number.isFinite(result.pMastery)).toBe(true);
+  expect(result.pMastery).toBeGreaterThanOrEqual(MASTERY_THRESHOLD);
+  expect(typeof result.displayedMasteryPercent).toBe('number');
+  expect(Number.isFinite(result.displayedMasteryPercent)).toBe(true);
+
+  const stored = await ConceptMastery.findOne({ userId, topicId });
+  expect(stored.isMastered).toBe(true);
+  expect(stored.newlyMastered).toBeUndefined();
+  expect(stored.pMastery).toBeGreaterThanOrEqual(MASTERY_THRESHOLD);
+  expect(typeof stored.pMastery).toBe('number');
+  expect(Number.isFinite(stored.pMastery)).toBe(true);
+  expect(typeof stored.displayedMasteryPercent).toBe('number');
+  expect(Number.isFinite(stored.displayedMasteryPercent)).toBe(true);
+});

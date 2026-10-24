@@ -24,7 +24,8 @@ async function update(userId, topicId, isCorrect) {
     });
   }
 
-  const previousMastery = record.pMastery ?? DEFAULT_PARAMS.pInit;
+  const previousMastery =
+    record.pMastery ?? (record.isMastered ? MASTERY_THRESHOLD : DEFAULT_PARAMS.pInit);
   const previousDisplayedMastery = record.displayedMasteryPercent ?? 30;
   const wasMastered = record.isMastered;
 
